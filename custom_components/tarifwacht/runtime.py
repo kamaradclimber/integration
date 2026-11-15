@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
-from collections.abc import Callable, Coroutine, Mapping
+from collections.abc import Callable, Coroutine, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
@@ -37,6 +37,7 @@ from homeassistant.helpers.event import (
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
+from .battery_sim import SimResult, SimSettings, simulate
 from .const import (
     BERLIN,
     CONF_CHARGED_ENTITY,
@@ -867,6 +868,43 @@ class MeterRuntime:
             inputs.flows, inputs.tariffs, inputs.settings, BERLIN, inputs.market
         )
         return result, inputs.used_smard, inputs.implausible
+
+    async def async_battery_simulation(
+        self,
+        start: datetime,
+        end: datetime,
+        lookback: Lookback | None,
+        batteries: Sequence[SimSettings],
+    ) -> tuple[SimResult, SolarResult, bool, list[datetime]] | None:
+        """Imagined batteries in [start, end) for the simulate_battery action,
+        with the real saving beside them. Then: SMARD.de was used; hours left
+        out as implausible. None without PV and battery. A year of hours
+        takes a moment: computed in the executor."""
+        inputs = await self._async_solar_inputs(start, end, lookback)
+        if inputs is None:
+            return None
+
+        def run() -> tuple[SimResult, SolarResult]:
+            return (
+                simulate(
+                    inputs.flows,
+                    inputs.tariffs,
+                    inputs.settings,
+                    batteries,
+                    BERLIN,
+                    inputs.market,
+                ),
+                solar_totals(
+                    inputs.flows,
+                    inputs.tariffs,
+                    inputs.settings,
+                    BERLIN,
+                    inputs.market,
+                ),
+            )
+
+        simulated, real = await self.hass.async_add_executor_job(run)
+        return simulated, real, inputs.used_smard, inputs.implausible
 
     async def async_solar_hourly(
         self,

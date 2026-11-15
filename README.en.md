@@ -26,7 +26,7 @@ The user interface is available in German and English and follows the language o
 ## Contents
 
 - [Features](#features) · [Notes on the comparison](#notes-on-the-comparison) · [What Tarifwacht does not do](#what-tarifwacht-does-not-do)
-- **Getting started:** [Requirements](#requirements) · [Installation](#installation) · [Setup](#setup) · [More tariffs](#more-tariffs) · [Adding a dynamic tariff](#adding-a-dynamic-tariff) · [Price components](#price-components-what-goes-where) · [Where do I see my tariffs?](#where-do-i-see-my-tariffs) · [Changing a tariff](#changing-a-tariff) · [Modul 3](#modul-3--14a-enwg) · [PV and battery](#pv-and-battery)
+- **Getting started:** [Requirements](#requirements) · [Installation](#installation) · [Setup](#setup) · [More tariffs](#more-tariffs) · [Adding a dynamic tariff](#adding-a-dynamic-tariff) · [Price components](#price-components-what-goes-where) · [Where do I see my tariffs?](#where-do-i-see-my-tariffs) · [Changing a tariff](#changing-a-tariff) · [Modul 3](#modul-3--14a-enwg) · [PV and battery](#pv-and-battery) · [Simulate a battery](#simulate-a-battery-would-a-battery-pay)
 - **Using it:** [Entities](#entities) · [Card](#card) · [Dashboard](#dashboard-tariff-comparison) · [Comparison for a period](#comparison-for-a-period) · [Looking back before the setup](#looking-back-before-the-setup) · [Import statistics](#import-statistics) · [Recalculate statistics](#recalculate-statistics)
 - **More:** [Privacy](#privacy) · [Troubleshooting](#troubleshooting) · [Removal](#removal) · [Reporting issues](#reporting-issues) · [Thanks](#thanks) · [Sister integrations](#sister-integrations)
 
@@ -37,7 +37,7 @@ The user interface is available in German and English and follows the language o
 - **Average price** per tariff (ct/kWh, including base price) and the **cheapest tariff** so far.
 - **Any number of tariffs:** fixed price, dynamic with a total-price sensor, or dynamic from exchange price plus grid fee, taxes/levies, supplier surcharge and VAT.
 - **Modul 3** (§ 14a EnWG): time-variable grid fee with low-load and high-load windows per quarter.
-- **Saving by PV and battery** per tariff (€): what the PV system and battery saved against buying all consumption, with feed-in tariff and § 51 EEG – hybrid inverters and batteries with their own inverter, see [PV and battery](#pv-and-battery). With the purchase costs also when PV and battery have paid for themselves, or are expected to.
+- **Saving by PV and battery** per tariff (€): what the PV system and battery saved against buying all consumption, with feed-in tariff and § 51 EEG – hybrid inverters and batteries with their own inverter, see [PV and battery](#pv-and-battery). With the purchase costs also when PV and battery have paid for themselves, or are expected to. And by action: what a (bigger) battery would have saved, also charging from the grid, see [Simulate a battery](#simulate-a-battery-would-a-battery-pay).
 - **A card of its own for the dashboard:** your tariff, whether another one would have been cheaper and what PV and battery save – today, this month and this year, plus bars per month. No extra cards from the Marketplace, see [Card](#card).
 - **Price changes from a date**, e.g. new grid fees on 1 January – the old prices still apply before that date.
 - **One-off bonus** per tariff and per price change (a new contract), e.g. a 250 € switching bonus – lowers the total cost once, on the day it is credited.
@@ -225,6 +225,24 @@ With purchase costs, “Saving by PV” and “Saving by battery” of every tar
 - **Expected to be paid back:** today + remaining amount ÷ average saving per day over the **last 365 days** (summer and winter even out). Without a full year yet, Tarifwacht uses the days there are and marks the estimate as rough (`forecast_rough`, card “(rough)”) – after a summer it comes out too early, after a winter too late. Under seven days there is no estimate. Future prices, battery ageing and maintenance are left out.
 - It is based on each tariff: with the more expensive tariff the system pays for itself sooner.
 - Changing purchase costs or days recomputes only this; the saving statistics stay (no “recalculate statistics” notice). The statistics before the setup are read once at the start and after an import or recalculation, not continuously.
+
+#### Simulate a battery: would a battery pay?
+
+What would a battery of a given size have saved under each tariff? The action **Simulate battery** plays it through hour by hour on your metered values – no new field in the setup, only when you call it. It needs [PV and battery](#pv-and-battery) with the feed-in and PV meters. *Settings → Tools → Actions* (formerly *Developer tools → Actions*) → **Simulate battery**, choose the meter, “Show response”:
+
+```yaml
+action: tarifwacht.simulate_battery
+data:
+  config_entry: <choose entry>
+  sizes: ["5", "10", "15"]
+```
+
+- **How it computes:** An imagined battery charges from the PV surplus and covers what the PV does not – limited by its size and power, with a loss per cycle. It is compared with “PV without battery”; an existing battery is taken out first, its real saving is shown beside as `your_battery_saving`.
+- **Period:** without a start the last year. A whole year tells most – a battery brings a lot in summer and little in winter. Shorter periods are scaled to a year and marked (`rough: true`). Before the setup it takes the hourly values from your meters' long-term statistics (as the [look-back](#looking-back-before-the-setup)); for exchange-price tariffs it loads exchange prices from SMARD.de for that. A year takes a moment.
+- **Response per tariff and size:** `saving` in the period, `saving_per_year`, `full_cycles` and `full_cycles_per_year`, and `pays_off_up_to` – up to which purchase price the battery pays for itself over 10 or 15 years (without interest, price increases and ageing, as in [Paid back?](#paid-back)). Under `months` the saving per month.
+- **Assumptions** (changeable in the collapsed section): power half the size per hour (0.5 C, own assumption), **efficiency per cycle 89 %** (battery 95.0 % on average according to the [HTW Berlin battery inspection 2026](https://solar.htw-berlin.de/wp-content/uploads/HTW-aquu-Stromspeicher-Inspektion-2026.pdf), p. 17, plus charging and discharging at about 97 % each). Standby consumption and ageing are left out.
+- **Also charge from the grid** (collapsed): with a dynamic tariff the battery also charges in cheap hours for dear ones later when that beats the loss, at most a day ahead and with the grid charging power set. The look-back already knows the PV and consumption of the next hours; a real control does not. This part (`saving_grid_at_best`) is therefore the **best case**. If even that stays small, grid charging hardly pays for you.
+- **Limits:** It computes with hourly values. Within an hour PV and consumption are netted; short gaps a battery would fill are missed – the saving comes out rather low.
 
 ## Entities
 

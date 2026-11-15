@@ -1,5 +1,11 @@
 # Changelog
 
+## Unveröffentlicht
+
+### Neu
+
+- **Speicher simulieren: Lohnt sich ein (größerer) Speicher?** Die neue Aktion *Speicher simulieren* rechnet an deinen gemessenen Stunden durch, was ein Speicher bestimmter Größe (Vorgabe 5, 10 und 15 kWh) mit jedem Tarif gespart hätte: je Jahr, je Monat, in Vollzyklen und bis zu welchem Kaufpreis er sich in 10 oder 15 Jahren bezahlt macht. Auf Wunsch lädt er bei dynamischem Tarif auch aus dem Netz – als bester Fall gerechnet. Braucht „PV und Speicher“; kein neues Feld in der Einrichtung. Siehe README, „Speicher simulieren“. (danke an MelleD und greteOne, simon42-Forum)
+
 ## 0.3.2 – 2026-11-15
 
 ### Geändert

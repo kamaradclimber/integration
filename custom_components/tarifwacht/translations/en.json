@@ -798,6 +798,49 @@
           "description": "Also recalculate the hours that already have statistics, from the start up to the last full hour, with the current tariffs. Without it only the time before the first statistics is filled in. The button “Recalculate statistics” on the meter's device does the same from the first statistics on."
         }
       }
+    },
+    "simulate_battery": {
+      "name": "Simulate battery",
+      "description": "What a battery of a given size would have saved under each tariff, from the metered hours of a period: it charges from the PV surplus and covers the consumption the PV does not. Needs “PV and battery” with the feed-in and PV meters. An existing battery is taken out first; its real saving is shown beside. Takes a moment for a year.",
+      "fields": {
+        "config_entry": {
+          "name": "Meter",
+          "description": "The Tarifwacht entry with “PV and battery”."
+        },
+        "start": {
+          "name": "Start",
+          "description": "Optional. Without: one year before the end. Best a whole year, so summer and winter both count."
+        },
+        "end": {
+          "name": "End",
+          "description": "Optional. Without it: until now."
+        },
+        "sizes": {
+          "name": "Battery sizes",
+          "description": "Usable capacity in kWh, up to six. Without: 5, 10 and 15 kWh."
+        },
+        "power": {
+          "name": "Charging and discharging power",
+          "description": "Optional. Without: half the size per hour (0.5 C), e.g. 5 kW for 10 kWh."
+        },
+        "efficiency": {
+          "name": "Efficiency per cycle",
+          "description": "Optional. What comes out of the stored energy, AC to AC. Without: 89 % (HTW Berlin battery inspection, see README)."
+        },
+        "grid_charging": {
+          "name": "Also charge from the grid",
+          "description": "Only pays with prices that change (dynamic tariff): the battery also charges in cheap hours for dear ones later. Hindsight knows the next hours, a real control does not: this part is the best case."
+        },
+        "grid_power": {
+          "name": "Maximum charging power from the grid",
+          "description": "Optional. Without: the charging power above."
+        }
+      },
+      "sections": {
+        "advanced": {
+          "name": "Power, efficiency and charging from the grid"
+        }
+      }
     }
   },
   "exceptions": {
@@ -842,6 +885,12 @@
     },
     "recalculate_failed_title": {
       "message": "Tarifwacht: statistics not recalculated"
+    },
+    "simulation_no_solar": {
+      "message": "The simulation needs “PV and battery” with the feed-in and PV meters: Tarifwacht → Add → PV and battery."
+    },
+    "simulation_no_hours": {
+      "message": "No hours with meter values in this period. The meters' long-term statistics may begin later."
     }
   },
   "issues": {

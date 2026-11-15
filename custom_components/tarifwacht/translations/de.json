@@ -798,6 +798,49 @@
           "description": "Auch die Stunden mit vorhandener Statistik vom Beginn bis zur letzten vollen Stunde mit den aktuellen Tarifen neu berechnen. Ohne: nur die Zeit vor der ersten Statistik nachtragen. Die Schaltfläche „Statistik neu berechnen“ am Gerät des Zählers macht dasselbe ab der ersten Statistik."
         }
       }
+    },
+    "simulate_battery": {
+      "name": "Speicher simulieren",
+      "description": "Was ein Speicher bestimmter Größe mit jedem Tarif gespart hätte, aus den gemessenen Stunden eines Zeitraums: Er lädt aus dem PV-Überschuss und deckt, was die PV nicht schafft. Braucht „PV und Speicher“ mit Einspeise- und PV-Zähler. Ein vorhandener Speicher wird erst herausgerechnet; seine echte Ersparnis steht daneben. Für ein Jahr dauert es einen Moment.",
+      "fields": {
+        "config_entry": {
+          "name": "Zähler",
+          "description": "Der Tarifwacht-Eintrag mit „PV und Speicher“."
+        },
+        "start": {
+          "name": "Beginn",
+          "description": "Optional. Ohne: ein Jahr vor dem Ende. Am besten ein ganzes Jahr, damit Sommer und Winter zählen."
+        },
+        "end": {
+          "name": "Ende",
+          "description": "Optional. Ohne: bis jetzt."
+        },
+        "sizes": {
+          "name": "Speichergrößen",
+          "description": "Nutzbare Kapazität in kWh, bis zu sechs. Ohne: 5, 10 und 15 kWh."
+        },
+        "power": {
+          "name": "Lade- und Entladeleistung",
+          "description": "Optional. Ohne: halbe Speichergröße je Stunde (0,5 C), z. B. 5 kW bei 10 kWh."
+        },
+        "efficiency": {
+          "name": "Wirkungsgrad je Zyklus",
+          "description": "Optional. Was von der gespeicherten Energie wieder herauskommt, AC zu AC. Ohne: 89 % (Stromspeicher-Inspektion der HTW Berlin, siehe README)."
+        },
+        "grid_charging": {
+          "name": "Auch aus dem Netz laden",
+          "description": "Lohnt nur bei wechselnden Preisen (dynamischer Tarif): Der Speicher lädt zusätzlich in günstigen Stunden für spätere teure. Der Rückblick kennt die nächsten Stunden schon, eine echte Steuerung nicht: Dieser Teil ist der beste Fall."
+        },
+        "grid_power": {
+          "name": "Höchste Ladeleistung aus dem Netz",
+          "description": "Optional. Ohne: die Ladeleistung oben."
+        }
+      },
+      "sections": {
+        "advanced": {
+          "name": "Leistung, Wirkungsgrad und Laden aus dem Netz"
+        }
+      }
     }
   },
   "exceptions": {
@@ -842,6 +885,12 @@
     },
     "recalculate_failed_title": {
       "message": "Tarifwacht: Statistik nicht neu berechnet"
+    },
+    "simulation_no_solar": {
+      "message": "Die Simulation braucht „PV und Speicher“ mit Einspeise- und PV-Zähler: Tarifwacht → Hinzufügen → PV und Speicher."
+    },
+    "simulation_no_hours": {
+      "message": "In diesem Zeitraum gibt es keine Stunden mit Zählerwerten. Vielleicht beginnt die Langzeitstatistik der Zähler später."
     }
   },
   "issues": {

@@ -24,7 +24,7 @@ Die Oberfläche gibt es auf Deutsch und Englisch; sie folgt der Sprache deines H
 ## Inhalt
 
 - [Was Tarifwacht kann](#was-tarifwacht-kann) · [Hinweise zum Vergleich](#hinweise-zum-vergleich) · [Was Tarifwacht nicht kann](#was-tarifwacht-nicht-kann)
-- **Loslegen:** [Voraussetzungen](#voraussetzungen) · [Installation](#installation) · [Einrichtung](#einrichtung) · [Weitere Tarife](#weitere-tarife) · [Dynamischen Tarif anlegen](#dynamischen-tarif-anlegen) · [Preisbestandteile](#preisbestandteile-was-gehört-wohin) · [Wo sehe ich meine Tarife?](#wo-sehe-ich-meine-tarife) · [Tarif ändern](#tarif-ändern) · [Modul 3](#modul-3--14a-enwg) · [PV und Speicher](#pv-und-speicher)
+- **Loslegen:** [Voraussetzungen](#voraussetzungen) · [Installation](#installation) · [Einrichtung](#einrichtung) · [Weitere Tarife](#weitere-tarife) · [Dynamischen Tarif anlegen](#dynamischen-tarif-anlegen) · [Preisbestandteile](#preisbestandteile-was-gehört-wohin) · [Wo sehe ich meine Tarife?](#wo-sehe-ich-meine-tarife) · [Tarif ändern](#tarif-ändern) · [Modul 3](#modul-3--14a-enwg) · [PV und Speicher](#pv-und-speicher) · [Speicher simulieren](#speicher-simulieren-lohnt-sich-ein-speicher)
 - **Nutzen:** [Entitäten](#entitäten) · [Karte](#karte) · [Dashboard](#dashboard-tarifvergleich) · [Vergleich für einen Zeitraum](#vergleich-für-einen-zeitraum) · [Rückblick vor der Einrichtung](#rückblick-vor-der-einrichtung) · [Statistik nachtragen](#statistik-nachtragen) · [Statistik neu berechnen](#statistik-neu-berechnen)
 - **Mehr:** [Datenschutz](#datenschutz) · [Fehlerbehebung](#fehlerbehebung) · [Entfernen](#entfernen) · [Fehler melden](#fehler-melden) · [Danke](#danke) · [Weitere Wachten](#weitere-wachten)
 
@@ -35,7 +35,7 @@ Die Oberfläche gibt es auf Deutsch und Englisch; sie folgt der Sprache deines H
 - **Durchschnittspreis** je Tarif (ct/kWh, mit Grundpreis) und **Günstigster Tarif** bisher.
 - **Beliebig viele Tarife:** Festpreis, dynamisch mit einem Gesamtpreis-Sensor oder dynamisch aus Börsenpreis plus Netzentgelt, Steuern/Abgaben, Anbieteraufschlag und Mehrwertsteuer.
 - **Modul 3** (§ 14a EnWG): zeitvariables Netzentgelt mit Niedrig- und Hochlastfenstern je Quartal.
-- **Ersparnis durch PV und Speicher** je Tarif (€): was PV-Anlage und Speicher gegenüber dem Bezug des ganzen Verbrauchs gespart haben, mit Einspeisevergütung und § 51 EEG – Hybrid-Wechselrichter und eigene Speicher-Wechselrichter, siehe [PV und Speicher](#pv-und-speicher). Mit den Anschaffungskosten auch, wann sich PV und Speicher bezahlt gemacht haben bzw. voraussichtlich bezahlt machen.
+- **Ersparnis durch PV und Speicher** je Tarif (€): was PV-Anlage und Speicher gegenüber dem Bezug des ganzen Verbrauchs gespart haben, mit Einspeisevergütung und § 51 EEG – Hybrid-Wechselrichter und eigene Speicher-Wechselrichter, siehe [PV und Speicher](#pv-und-speicher). Mit den Anschaffungskosten auch, wann sich PV und Speicher bezahlt gemacht haben bzw. voraussichtlich bezahlt machen. Und per Aktion: was ein (größerer) Speicher gespart hätte, auch mit Laden aus dem Netz, siehe [Speicher simulieren](#speicher-simulieren-lohnt-sich-ein-speicher).
 - **Eigene Karte fürs Dashboard:** dein Tarif, ob ein anderer günstiger gewesen wäre und was PV und Speicher sparen – heute, im Monat und im Jahr, dazu Säulen je Monat. Ohne Zusatzkarten aus dem Marketplace, siehe [Karte](#karte).
 - **Preisänderungen ab einem Datum**, z. B. neue Netzentgelte zum 1. Januar – davor gelten die alten Preise weiter.
 - **Einmaliger Bonus** je Tarif und je Preisänderung (neuer Vertrag), z. B. 250 € Wechselbonus – senkt die Kosten gesamt einmal, am Tag der Gutschrift.
@@ -223,6 +223,24 @@ Mit Anschaffungskosten zeigen „Ersparnis PV“ und „Ersparnis Speicher“ je
 - **Voraussichtlich bezahlt:** heute + Restbetrag ÷ durchschnittliche Ersparnis je Tag der **letzten 365 Tage** (Sommer und Winter gleichen sich aus). Gibt es noch kein ganzes Jahr, rechnet Tarifwacht mit den vorhandenen Tagen und markiert die Schätzung als grob (`forecast_rough`, Karte „(grob)“) – nach einem Sommer fällt sie zu früh aus, nach einem Winter zu spät. Unter sieben Tagen gibt es keine Schätzung. Künftige Preise, Alterung des Speichers und Wartung bleiben außen vor.
 - Grundlage ist der jeweilige Tarif: Mit dem teureren Tarif macht sich die Anlage schneller bezahlt.
 - Anschaffungskosten und Tage zu ändern rechnet nur das neu, die Statistik der Ersparnis bleibt (kein Hinweis „Statistik neu berechnen“). Gelesen wird die Statistik vor der Einrichtung einmal beim Start und nach Nachtragen oder Neuberechnen, nicht laufend.
+
+#### Speicher simulieren: Lohnt sich ein Speicher?
+
+Was hätte ein Speicher bestimmter Größe mit jedem Tarif gespart? Die Aktion **Speicher simulieren** spielt das Stunde für Stunde an deinen gemessenen Werten durch – ohne neues Feld in der Einrichtung, nur wenn du sie aufrufst. Voraussetzung ist [PV und Speicher](#pv-und-speicher) mit Einspeise- und PV-Zähler. *Einstellungen → Werkzeuge → Aktionen* (früher *Entwicklerwerkzeuge → Aktionen*) → **Speicher simulieren**, Zähler wählen, „Antwort anzeigen“:
+
+```yaml
+action: tarifwacht.simulate_battery
+data:
+  config_entry: <Eintrag auswählen>
+  sizes: ["5", "10", "15"]
+```
+
+- **So rechnet sie:** Ein gedachter Speicher lädt aus dem PV-Überschuss und deckt, was die PV nicht schafft – begrenzt durch Größe und Leistung, mit einem Verlust je Zyklus. Verglichen wird mit „PV ohne Speicher“; ein vorhandener Speicher wird dafür erst herausgerechnet, seine echte Ersparnis steht als `your_battery_saving` daneben.
+- **Zeitraum:** ohne Beginn das letzte Jahr. Am aussagekräftigsten ist ein ganzes Jahr – im Sommer bringt ein Speicher viel, im Winter wenig. Kürzere Zeiträume rechnet sie aufs Jahr hoch und markiert das (`rough: true`). Vor der Einrichtung nimmt sie die Stundenwerte aus der Langzeitstatistik deiner Zähler (wie der [Rückblick](#rückblick-vor-der-einrichtung)); für Börsenpreis-Tarife lädt sie dafür Börsenpreise von SMARD.de. Ein Jahr dauert einen Moment.
+- **Antwort je Tarif und Größe:** `saving` im Zeitraum, `saving_per_year`, `full_cycles` und `full_cycles_per_year`, und `pays_off_up_to` – bis zu welchem Kaufpreis sich der Speicher bei 10 bzw. 15 Jahren Lebensdauer bezahlt macht (ohne Zins, Preissteigerung und Alterung, wie bei [Bezahlt gemacht?](#bezahlt-gemacht)). Unter `months` die Ersparnis je Monat.
+- **Annahmen** (im eingeklappten Abschnitt änderbar): Leistung halbe Speichergröße je Stunde (0,5 C, eigene Annahme), **Wirkungsgrad je Zyklus 89 %** (Batterie im Mittel 95,0 % laut [Stromspeicher-Inspektion 2026 der HTW Berlin](https://solar.htw-berlin.de/wp-content/uploads/HTW-aquu-Stromspeicher-Inspektion-2026.pdf), S. 17, dazu Laden und Entladen je etwa 97 %). Standby-Verbrauch und Alterung bleiben außen vor.
+- **Auch aus dem Netz laden** (eingeklappt): Mit einem dynamischen Tarif lädt der Speicher zusätzlich in günstigen Stunden für spätere teure, wenn sich das nach dem Verlust lohnt, höchstens einen Tag im Voraus und mit der eingestellten Netz-Ladeleistung. Der Rückblick kennt dabei schon, wie viel PV und Verbrauch die nächsten Stunden bringen; eine echte Steuerung kennt das nicht. Dieser Teil (`saving_grid_at_best`) ist deshalb der **beste Fall**. Bleibt schon der klein, lohnt sich Netzladen bei dir kaum.
+- **Grenzen:** Gerechnet wird mit Stundenwerten. Innerhalb einer Stunde werden PV und Verbrauch verrechnet; kurze Lücken, die ein Speicher füllen würde, fehlen – die Ersparnis fällt eher etwas zu niedrig aus.
 
 ## Entitäten
 

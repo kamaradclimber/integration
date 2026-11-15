@@ -44,6 +44,12 @@
     },
     "import_statistics": {
       "service": "mdi:database-import"
+    },
+    "simulate_battery": {
+      "service": "mdi:home-battery-outline",
+      "sections": {
+        "advanced": "mdi:tune-variant"
+      }
     }
   }
 }
