@@ -37,11 +37,14 @@ DEFAULT_SIZES = (5.0, 10.0, 15.0)
 # Default power as a share of the size per hour (0.5 C); own assumption,
 # home batteries are usually specified between 0.5 C and 1 C.
 DEFAULT_C_RATE = 0.5
-# Default round trip, AC to AC: battery 95.0 % on average (HTW Berlin,
-# Stromspeicher-Inspektion 2026, p. 17) times charging and discharging at
-# about 97 % each (HTW 2025: 92 to 98.2 % when charging). See
+# Default round trip, AC to AC. In the lab about 89 %: battery 95.0 % on
+# average (HTW Berlin, Stromspeicher-Inspektion 2026, p. 17) times charging
+# and discharging at about 97 % each (HTW 2025: 92 to 98.2 % when charging).
+# Lower in operation: most night flows are below 300 W (same study,
+# p. 21-22), where conversion is much worse; at a real Fronius Gen24 + BYD
+# the lab value came out about 13 % above the metered saving. See
 # docs/ENTWICKLUNG.md, section 2d.
-DEFAULT_EFFICIENCY = 0.89
+DEFAULT_EFFICIENCY = 0.85
 # How far back a grid charge may lie before the hour it covers.
 GRID_WINDOW = 24
 # Lifetimes for "pays off up to a purchase price of".

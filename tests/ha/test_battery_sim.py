@@ -108,7 +108,7 @@ async def test_defaults(hass: HomeAssistant) -> None:
         (10.0, 5.0),
         (15.0, 7.5),
     ]
-    assert response["assumptions"]["efficiency_percent"] == 89.0
+    assert response["assumptions"]["efficiency_percent"] == 85.0
 
 
 async def test_without_pv_and_battery(hass: HomeAssistant) -> None:

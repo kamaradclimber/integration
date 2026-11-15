@@ -825,7 +825,7 @@
         },
         "efficiency": {
           "name": "Efficiency per cycle",
-          "description": "Optional. What comes out of the stored energy, AC to AC. Without: 89 % (HTW Berlin battery inspection, see README)."
+          "description": "Optional. What comes out of the stored energy, AC to AC. Without: 85 % (HTW Berlin battery inspection, less for low night loads; see README)."
         },
         "grid_charging": {
           "name": "Also charge from the grid",

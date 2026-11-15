@@ -825,7 +825,7 @@
         },
         "efficiency": {
           "name": "Wirkungsgrad je Zyklus",
-          "description": "Optional. Was von der gespeicherten Energie wieder herauskommt, AC zu AC. Ohne: 89 % (Stromspeicher-Inspektion der HTW Berlin, siehe README)."
+          "description": "Optional. Was von der gespeicherten Energie wieder herauskommt, AC zu AC. Ohne: 85 % (Stromspeicher-Inspektion der HTW Berlin, weniger bei kleinen Lasten in der Nacht; siehe README)."
         },
         "grid_charging": {
           "name": "Auch aus dem Netz laden",
