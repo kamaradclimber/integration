@@ -666,7 +666,7 @@
             "same_inverter": "Speicher am selben Wechselrichter wie die PV"
           },
           "data_description": {
-            "same_inverter": "Ja bei einem Hybrid-Wechselrichter (z. B. Fronius Gen24, Huawei, Kostal Plenticore): PV und Speicher teilen sich einen Wechselrichter. Nein bei einem Speicher mit eigenem Wechselrichter (z. B. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
+            "same_inverter": "Ja, wenn dein PV-Zähler auch den Strom aus dem Speicher mitzählt (die AC-Erzeugung eines Hybrid-Wechselrichters, z. B. Fronius Gen24, Huawei, Kostal Plenticore). Nein, wenn er nur die Solarmodule zählt (das geht auch bei einem Hybrid-Wechselrichter) oder wenn der Speicher einen eigenen Wechselrichter hat (z. B. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
           }
         },
         "battery_own": {
@@ -676,7 +676,7 @@
             "same_inverter": "Speicher am selben Wechselrichter wie die PV"
           },
           "data_description": {
-            "same_inverter": "Ja bei einem Hybrid-Wechselrichter (z. B. Fronius Gen24, Huawei, Kostal Plenticore): PV und Speicher teilen sich einen Wechselrichter. Nein bei einem Speicher mit eigenem Wechselrichter (z. B. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
+            "same_inverter": "Ja, wenn dein PV-Zähler auch den Strom aus dem Speicher mitzählt (die AC-Erzeugung eines Hybrid-Wechselrichters, z. B. Fronius Gen24, Huawei, Kostal Plenticore). Nein, wenn er nur die Solarmodule zählt (das geht auch bei einem Hybrid-Wechselrichter) oder wenn der Speicher einen eigenen Wechselrichter hat (z. B. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
           }
         },
         "battery_unknown": {
@@ -686,7 +686,7 @@
             "same_inverter": "Speicher am selben Wechselrichter wie die PV"
           },
           "data_description": {
-            "same_inverter": "Ja bei einem Hybrid-Wechselrichter (z. B. Fronius Gen24, Huawei, Kostal Plenticore): PV und Speicher teilen sich einen Wechselrichter. Nein bei einem Speicher mit eigenem Wechselrichter (z. B. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
+            "same_inverter": "Ja, wenn dein PV-Zähler auch den Strom aus dem Speicher mitzählt (die AC-Erzeugung eines Hybrid-Wechselrichters, z. B. Fronius Gen24, Huawei, Kostal Plenticore). Nein, wenn er nur die Solarmodule zählt (das geht auch bei einem Hybrid-Wechselrichter) oder wenn der Speicher einen eigenen Wechselrichter hat (z. B. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
           }
         }
       },

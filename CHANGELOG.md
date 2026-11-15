@@ -1,10 +1,11 @@
 # Changelog
 
-## Unveröffentlicht
+## 0.3.2 – 2026-11-15
 
 ### Geändert
 
 - **„Preise ab Beginn bearbeiten“ heißt jetzt „Tarif bearbeiten: Name, Preise ab Beginn, Bonus, aktueller Tarif“.** Der Menüpunkt unter *Tarif ändern* beginnt damit mit dem, was man dort am häufigsten sucht; „ab Beginn“ grenzt ihn weiter von der Preisänderung ab einem Datum ab. Sonst ändert sich nichts.
+- **„Speicher am selben Wechselrichter wie die PV“ fragt jetzt nach dem Zähler, nicht nach der Hardware.** Entscheidend ist, ob dein PV-Zähler auch den Strom aus dem Speicher mitzählt. Wer bei einem Hybrid-Wechselrichter wie dem Fronius Gen24 den Zähler der Solarmodule gewählt hat (etwa über SunSpec), wählt Nein, so wie es die Einrichtung aus den Daten vorschlägt. (danke an greteOne, simon42-Forum)
 
 ## 0.3.1 – 2026-11-14
 

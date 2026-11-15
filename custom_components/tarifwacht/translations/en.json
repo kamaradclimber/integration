@@ -666,7 +666,7 @@
             "same_inverter": "Battery on the same inverter as the PV"
           },
           "data_description": {
-            "same_inverter": "Yes for a hybrid inverter (e.g. Fronius Gen24, Huawei, Kostal Plenticore): PV and battery share one inverter. No for a battery with its own inverter (e.g. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
+            "same_inverter": "Yes if your PV meter also counts the energy from the battery (the AC output of a hybrid inverter, e.g. Fronius Gen24, Huawei, Kostal Plenticore). No if it counts only the solar modules (possible with a hybrid inverter too) or if the battery has its own inverter (e.g. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
           }
         },
         "battery_own": {
@@ -676,7 +676,7 @@
             "same_inverter": "Battery on the same inverter as the PV"
           },
           "data_description": {
-            "same_inverter": "Yes for a hybrid inverter (e.g. Fronius Gen24, Huawei, Kostal Plenticore): PV and battery share one inverter. No for a battery with its own inverter (e.g. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
+            "same_inverter": "Yes if your PV meter also counts the energy from the battery (the AC output of a hybrid inverter, e.g. Fronius Gen24, Huawei, Kostal Plenticore). No if it counts only the solar modules (possible with a hybrid inverter too) or if the battery has its own inverter (e.g. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
           }
         },
         "battery_unknown": {
@@ -686,7 +686,7 @@
             "same_inverter": "Battery on the same inverter as the PV"
           },
           "data_description": {
-            "same_inverter": "Yes for a hybrid inverter (e.g. Fronius Gen24, Huawei, Kostal Plenticore): PV and battery share one inverter. No for a battery with its own inverter (e.g. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
+            "same_inverter": "Yes if your PV meter also counts the energy from the battery (the AC output of a hybrid inverter, e.g. Fronius Gen24, Huawei, Kostal Plenticore). No if it counts only the solar modules (possible with a hybrid inverter too) or if the battery has its own inverter (e.g. SMA Sunny Boy Storage, Anker SOLIX, Zendure, Maxxisun)."
           }
         }
       },
