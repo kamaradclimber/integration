@@ -579,12 +579,22 @@ W_PRICE = "window_price"
 W_TIMES = "window_times"
 W_DAYS = "window_days"
 W_QUARTERS = "window_quarters"
+# Drop-down lists, not check boxes: 7 + 4 boxes per window made the form
+# very long (seen in the owner's HA, 16.11.); the chosen ones show as chips.
 WEEKDAY_SELECTOR = selector.SelectSelector(
     selector.SelectSelectorConfig(
         options=[str(d) for d in WEEKDAYS],
         multiple=True,
         translation_key="weekdays",
-        mode=selector.SelectSelectorMode.LIST,
+        mode=selector.SelectSelectorMode.DROPDOWN,
+    )
+)
+WINDOW_QUARTERS = selector.SelectSelector(
+    selector.SelectSelectorConfig(
+        options=[str(q) for q in ALL_QUARTERS],
+        multiple=True,
+        translation_key="quarters",
+        mode=selector.SelectSelectorMode.DROPDOWN,
     )
 )
 
@@ -597,7 +607,7 @@ def window_sections(open_windows: int) -> dict[Any, Any]:
                 vol.Optional(W_PRICE): PRICE_NUMBER,
                 vol.Optional(W_TIMES): selector.TextSelector(),
                 vol.Optional(W_DAYS): WEEKDAY_SELECTOR,
-                vol.Optional(W_QUARTERS): QUARTERS,
+                vol.Optional(W_QUARTERS): WINDOW_QUARTERS,
             },
             collapsed=number >= max(open_windows, 1),
         )

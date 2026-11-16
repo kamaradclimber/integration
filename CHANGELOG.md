@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1 – 2026-11-16
+
+### Geändert
+
+- **Zeitfenster-Tarif: kürzeres Formular.** Wochentage und Quartale eines Zeitfensters wählst du jetzt aus einer Liste; die gewählten stehen als kleine Kärtchen im Feld. Bisher standen je Fenster elf Häkchen untereinander. Sonst ändert sich nichts.
+
 ## 0.5.0 – 2026-11-16
 
 ### Neu
