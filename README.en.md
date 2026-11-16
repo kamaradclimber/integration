@@ -564,7 +564,7 @@ If you correct a tariff (prices, base price, bonus, a price change from a date, 
 
 ## Privacy
 
-Tarifwacht calculates locally and only reads the entities you select. Only exception: if you compare a time before the setup, Tarifwacht loads public exchange prices from SMARD.de. Nothing about you is transferred – just the download of the price files with the identifier `Tarifwacht/<version>`. The diagnostics file contains your tariff settings (prices, sensors), but no names, meter readings, energy or cost totals. What exactly is in it, and what the shorter report for a bug report holds, is described under [Reporting issues](#reporting-issues).
+Tarifwacht calculates locally and only reads the entities you select. Only exception, and only on your explicit action: if you compare a time before the setup, import statistics or tick "Fill the time since the setup with exchange prices from SMARD.de" when adding or changing an "exchange price plus surcharges" tariff, Tarifwacht loads public exchange prices from SMARD.de. Without the tick, that time stays out of the new tariff (see `energy_left_out_kwh`). Nothing about you is transferred – just the download of the price files with the identifier `Tarifwacht/<version>`. The diagnostics file contains your tariff settings (prices, sensors), but no names, meter readings, energy or cost totals. What exactly is in it, and what the shorter report for a bug report holds, is described under [Reporting issues](#reporting-issues).
 
 ## What Tarifwacht does not do
 
