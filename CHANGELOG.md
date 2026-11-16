@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.2 – 2026-11-16
+
+### Geändert
+
+- **Karte: Farbe des Unterschieds zeigt, wie dein Tarif dasteht.** Grün heißt jetzt: Der andere Tarif wäre teurer gewesen, deiner ist günstiger. Rot heißt: Der andere wäre günstiger gewesen. Bisher war es umgekehrt, und ein rotes Plus wirkte, als sei dein eigener Tarif teurer. Die Zahlen bleiben gleich (+ teurer, − günstiger). (danke an Pampelmuse, simon42-Forum)
+
 ## 0.5.1 – 2026-11-16
 
 ### Geändert

@@ -145,8 +145,11 @@ const STYLE = `
   tr.diff td { font-size: 13px; color: var(--secondary-text-color); padding-top: 2px; }
   tr.diff td:first-child { padding-left: 20px; }
   tr.parent td { border-bottom: 0; padding-bottom: 2px; }
-  tr td.more { color: var(--error-color, #db4437); }
-  tr td.less { color: var(--success-color, #43a047); }
+  /* The colour judges your tariff: green if the other one would have cost
+   * more (yours is cheaper), red if it would have cost less (simon42
+   * 94979 #32: red for "+" read as "my tariff is more expensive"). */
+  tr td.yours-cheaper { color: var(--success-color, #43a047); }
+  tr td.yours-dearer { color: var(--error-color, #db4437); }
   tr.section th { text-align: left; padding: 16px 4px 6px; color: var(--primary-text-color); font-size: 14px;
     white-space: normal; }
   tr.section ha-icon { --mdc-icon-size: 18px; color: var(--secondary-text-color); vertical-align: -3px; margin-right: 4px; }
@@ -635,7 +638,9 @@ class TarifwachtCard extends HTMLElement {
   _cell(id, period, sign = false) {
     if (!id) return "<td>–</td>";
     const value = statValue(this._hass, id, period);
-    const tone = sign && typeof value === "number" && Math.abs(value) >= 0.005 ? (value > 0 ? " more" : " less") : "";
+    const tone = sign && typeof value === "number" && Math.abs(value) >= 0.005
+      ? (value > 0 ? " yours-cheaper" : " yours-dearer")
+      : "";
     return `<td class="link${tone}" data-entity="${escapeHtml(id)}">${escapeHtml(this._eur(value, sign))}</td>`;
   }
 

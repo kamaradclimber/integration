@@ -559,7 +559,8 @@
           .flatMap((k) => {
             const today = view.today[k] - view.today.fixed;
             const month = view.month[k] - view.month.fixed;
-            const tone = (v) => (v > 0 ? "more" : v < 0 ? "less" : "");
+            // As the card: green if the other tariff would have cost more.
+            const tone = (v) => (v > 0 ? "less" : v < 0 ? "more" : "");
             return [
               stat(tx.diffToday(labels[k]), today, "c6", tone(today)),
               stat(tx.diffMonth(labels[k]), month, "c6", tone(month)),
