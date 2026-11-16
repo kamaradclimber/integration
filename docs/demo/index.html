@@ -808,12 +808,19 @@
         const rows = Object.fromEntries(sim.tariffs.map((r) => [r.tariff, r]));
         const line = (name, fn, cls = "") =>
           `<tr class="${cls}"><td>${name}</td>${keys.map((k) => `<td>${fn(rows[labels[k]])}</td>`).join("")}</tr>`;
+        // Same in every tariff (charged from PV only): one cell across all columns.
+        const lineOnce = (name, fn) => {
+          const values = keys.map((k) => fn(rows[labels[k]]));
+          return values.every((v) => v === values[0])
+            ? `<tr><td>${name}</td><td colspan="${keys.length}" style="text-align:center">${values[0]}</td></tr>`
+            : line(name, fn);
+        };
         const sizes = sim.tariffs[0].sizes.map((first, i) => {
           const size = (r) => r.sizes[i];
           const pays = (s) => (s.pays_off_up_to ? `${eur0(s.pays_off_up_to["10_years"])} / ${eur0(s.pays_off_up_to["15_years"])}` : "–");
           return (
             line(tx.simSaving(num(first.size_kwh, 0), num(first.power_kw, first.power_kw % 1 ? 1 : 0)), (r) => eur(size(r).saving_per_year), "split") +
-            line(escapeHtml(tx.simCycles), (r) => num(size(r).full_cycles_per_year, 0)) +
+            lineOnce(escapeHtml(tx.simCycles), (r) => num(size(r).full_cycles_per_year, 0)) +
             line(escapeHtml(tx.simPays), (r) => pays(size(r)))
           );
         });
