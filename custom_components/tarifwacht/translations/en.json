@@ -89,7 +89,7 @@
       },
       "dynamic_total": {
         "title": "Dynamic tariff: total price sensor",
-        "description": "A sensor that already contains the whole price per kWh – the total price of a dynamic tariff (exchange price plus grid fee, levies, taxes, supplier surcharge and VAT) or your own tariff as a template sensor in €/kWh. A sensor only knows its own past: calculates only from the setup on (no lookback, no import of statistics) – for a dynamic tariff better choose “exchange price plus surcharges”.",
+        "description": "A sensor that already contains the whole price per kWh – the total price of a dynamic tariff (exchange price plus grid fee, levies, taxes, supplier surcharge and VAT) or your own tariff as a template sensor in €/kWh. A sensor only knows its own past: calculates only from the setup on (no lookback, no import of statistics) – for a dynamic tariff better choose “exchange price plus surcharges”. Your price source is not recognised or calculates wrongly? Feel free to let us know ([issue]({issues_url}) with the diagnostics file), then Tarifwacht will support it in future.",
         "data": {
           "price_entity": "Total price sensor",
           "base_price": "Base price per month"
@@ -176,7 +176,7 @@
         },
         "dynamic_total": {
           "title": "Dynamic tariff: total price sensor",
-          "description": "A sensor that already contains the whole price per kWh – the total price of a dynamic tariff (exchange price plus grid fee, levies, taxes, supplier surcharge and VAT) or your own tariff as a template sensor in €/kWh. A sensor only knows its own past: calculates only from the setup on (no lookback, no import of statistics) – for a dynamic tariff better choose “exchange price plus surcharges”.{edit_hint}",
+          "description": "A sensor that already contains the whole price per kWh – the total price of a dynamic tariff (exchange price plus grid fee, levies, taxes, supplier surcharge and VAT) or your own tariff as a template sensor in €/kWh. A sensor only knows its own past: calculates only from the setup on (no lookback, no import of statistics) – for a dynamic tariff better choose “exchange price plus surcharges”. Your price source is not recognised or calculates wrongly? Feel free to let us know ([issue]({issues_url}) with the diagnostics file), then Tarifwacht will support it in future.{edit_hint}",
           "data": {
             "name": "Name",
             "price_entity": "Total price sensor",

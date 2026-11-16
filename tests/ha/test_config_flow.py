@@ -108,6 +108,10 @@ async def test_full_flow(hass: HomeAssistant) -> None:
     assert result["step_id"] == "dynamic"
     result = await configure(hass, result, {"next_step_id": "dynamic_total"})
     assert result["step_id"] == "dynamic_total"
+    # Where to report a price source not recognised.
+    assert result["description_placeholders"] == {
+        "issues_url": "https://github.com/tarifwacht/integration/issues"
+    }
     result = await configure(hass, result, {"price_entity": PRICE})
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Haus"

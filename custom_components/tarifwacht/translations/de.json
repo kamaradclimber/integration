@@ -89,7 +89,7 @@
       },
       "dynamic_total": {
         "title": "Dynamischer Tarif: Sensor mit Gesamtpreis",
-        "description": "Ein Sensor, der bereits den ganzen Preis je kWh enthält – der Gesamtpreis eines dynamischen Tarifs (Börsenpreis plus Netzentgelt, Abgaben, Steuern, Anbieteraufschlag und Mehrwertsteuer) oder dein eigener Tarif als Template-Sensor in €/kWh. Ein Sensor kennt nur seine eigene Vergangenheit: Rechnet nur ab der Einrichtung (kein Rückblick, kein Nachtragen der Statistik) – für einen dynamischen Tarif deshalb besser „Börsenpreis plus Aufschläge“ wählen.",
+        "description": "Ein Sensor, der bereits den ganzen Preis je kWh enthält – der Gesamtpreis eines dynamischen Tarifs (Börsenpreis plus Netzentgelt, Abgaben, Steuern, Anbieteraufschlag und Mehrwertsteuer) oder dein eigener Tarif als Template-Sensor in €/kWh. Ein Sensor kennt nur seine eigene Vergangenheit: Rechnet nur ab der Einrichtung (kein Rückblick, kein Nachtragen der Statistik) – für einen dynamischen Tarif deshalb besser „Börsenpreis plus Aufschläge“ wählen. Deine Preisquelle wird nicht erkannt oder rechnet falsch? Gib gern Bescheid ([Issue]({issues_url}) mit der Diagnose-Datei), dann unterstützt Tarifwacht sie künftig.",
         "data": {
           "price_entity": "Sensor mit Gesamtpreis",
           "base_price": "Grundpreis pro Monat"
@@ -176,7 +176,7 @@
         },
         "dynamic_total": {
           "title": "Dynamischer Tarif: Sensor mit Gesamtpreis",
-          "description": "Ein Sensor, der bereits den ganzen Preis je kWh enthält – der Gesamtpreis eines dynamischen Tarifs (Börsenpreis plus Netzentgelt, Abgaben, Steuern, Anbieteraufschlag und Mehrwertsteuer) oder dein eigener Tarif als Template-Sensor in €/kWh. Ein Sensor kennt nur seine eigene Vergangenheit: Rechnet nur ab der Einrichtung (kein Rückblick, kein Nachtragen der Statistik) – für einen dynamischen Tarif deshalb besser „Börsenpreis plus Aufschläge“ wählen.{edit_hint}",
+          "description": "Ein Sensor, der bereits den ganzen Preis je kWh enthält – der Gesamtpreis eines dynamischen Tarifs (Börsenpreis plus Netzentgelt, Abgaben, Steuern, Anbieteraufschlag und Mehrwertsteuer) oder dein eigener Tarif als Template-Sensor in €/kWh. Ein Sensor kennt nur seine eigene Vergangenheit: Rechnet nur ab der Einrichtung (kein Rückblick, kein Nachtragen der Statistik) – für einen dynamischen Tarif deshalb besser „Börsenpreis plus Aufschläge“ wählen. Deine Preisquelle wird nicht erkannt oder rechnet falsch? Gib gern Bescheid ([Issue]({issues_url}) mit der Diagnose-Datei), dann unterstützt Tarifwacht sie künftig.{edit_hint}",
           "data": {
             "name": "Name",
             "price_entity": "Sensor mit Gesamtpreis",

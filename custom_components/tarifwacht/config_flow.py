@@ -118,6 +118,9 @@ def _number(unit: str, step: float, maximum: float) -> selector.NumberSelector:
     )
 
 
+# Where to report a price source not recognised (as a placeholder:
+# translations may hold no URLs).
+ISSUES_URL = "https://github.com/tarifwacht/integration/issues"
 PRICE_NUMBER = _number("ct/kWh", 0.001, 200)
 # Selector units are not translated; "per month/year" is in the field label.
 BASE_NUMBER = _number("€", 0.01, 10000)
@@ -380,6 +383,8 @@ class TarifwachtConfigFlow(ConfigFlow, domain=DOMAIN):
                 _tariff_schema(kind, setup=True), user_input or suggested
             ),
             errors=errors,
+            # Where to report a price source not recognised.
+            description_placeholders={"issues_url": ISSUES_URL},
         )
 
     async def _async_create(self, dynamic: dict[str, Any]) -> ConfigFlowResult:
@@ -1009,7 +1014,9 @@ class TariffSubentryFlow(ConfigSubentryFlow):
             # Editing shows the values from the start: say so, and where a
             # later price goes.
             description_placeholders={
-                "edit_hint": edit_hint(self._german) if subentry is not None else ""
+                "edit_hint": edit_hint(self._german) if subentry is not None else "",
+                # Where to report a price source not recognised.
+                "issues_url": ISSUES_URL,
             },
         )
 

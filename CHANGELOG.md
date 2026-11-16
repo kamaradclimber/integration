@@ -5,6 +5,7 @@
 ### Geändert
 
 - **Demo zeigt „Speicher simulieren“.** Beim Haus steht unter dem Jahresrückblick, was ein Speicher mit 5, 10 und 15 kWh in einem Jahr mit jedem Tarif gespart hätte, wie viele Vollzyklen er gemacht hätte und bis zu welchem Kaufpreis er sich bezahlt macht – daneben die Ersparnis des vorhandenen Speichers und die ganze Antwort der Aktion. Gerechnet vom Code der Integration, mit erfundenen Daten.
+- **Hinweis zum Melden bei „Sensor mit Gesamtpreis“.** Der Schritt sagt jetzt, wohin man sich wenden kann, wenn die eigene Preisquelle nicht erkannt wird oder falsch rechnet.
 
 ## 0.4.0 – 2026-11-15
 

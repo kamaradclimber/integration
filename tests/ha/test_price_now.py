@@ -186,7 +186,10 @@ async def test_menu_summary(hass: HomeAssistant, no_setup: AsyncMock) -> None:
     added = await hass.config_entries.subentries.async_configure(
         added["flow_id"], {"next_step_id": "fixed"}
     )
-    assert added["description_placeholders"] == {"edit_hint": ""}
+    assert added["description_placeholders"] == {
+        "edit_hint": "",
+        "issues_url": "https://github.com/tarifwacht/integration/issues",
+    }
 
     # The total price sensor by its name, in German.
     hass.config.language = "de"
