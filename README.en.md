@@ -13,7 +13,7 @@
 
 **What would your electricity have cost with a different tariff?** Tarifwacht ("tariff watch") prices your actual grid consumption in Home Assistant quarter hour by quarter hour against any number of tariffs – fixed price, dynamic, with or without Modul 3 – and shows which one would have been cheaper. Each dynamic tariff gets the price of **exactly that quarter hour**, not the price of whatever moment the meter happens to report. And would a (bigger) battery pay off? The action [Simulate battery](#simulate-a-battery-would-a-battery-pay) works it out on your metered hours.
 
-**Try it without installing:** the [demo](https://tarifwacht.github.io/integration/?lang=en) shows the card, the dashboard, devices, monthly summary and year in review for a flat and a house with PV, battery, an EV and a heat pump, there also the saving by PV and battery – with made-up prices and tariffs, but computed by the integration's own code.
+**Try it without installing:** the [demo](https://tarifwacht.github.io/integration/?lang=en) shows the card, the dashboard, devices, monthly summary and year in review for a flat and a house with PV, battery, an EV and a heat pump, there also the saving by PV and battery and what a battery of 5, 10 or 15 kWh would have saved ([Simulate a battery](#simulate-a-battery-would-a-battery-pay)) – with made-up prices and tariffs, but computed by the integration's own code.
 
 Tarifwacht is built for Germany: quarter-hour day-ahead prices, German price components and the time-variable grid fee under § 14a EnWG. Days and months (base prices) follow German local time.
 

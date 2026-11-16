@@ -336,6 +336,16 @@
             `${num(p.kwp, 0)} kWp Süddach, Speicher ${num(p.battery_kwh, 0)} kWh / ${num(p.battery_kw, 0)} kW am Hybrid-Wechselrichter ` +
             `(Eigenverbrauch zuerst, nicht ins E-Auto), Einspeisevergütung ${ct(p.feed_in_rate)} ct/kWh, § 51 EEG`,
           yearSolarTitle: (tariff) => `Ersparnis durch PV und Speicher je Monat (${tariff})`,
+          sim: "Speicher simulieren",
+          simTitle: "Was hätte ein Speicher gespart? (Aktion „Speicher simulieren“)",
+          simSaving: (kwh, kw) => `<b>${kwh} kWh</b> (${kw} kW): Ersparnis pro Jahr`,
+          simCycles: "Vollzyklen pro Jahr",
+          simPays: "bezahlt bis Kaufpreis (10 / 15 Jahre)",
+          simOwn: (kwh) => `Zum Vergleich: dein Speicher (${kwh} kWh), gemessen`,
+          simNote: (p) =>
+            `Ein gedachter Speicher über das Jahr, ab leer, nur aus dem PV-Überschuss geladen; Leistung halbe Größe je Stunde, Wirkungsgrad je Zyklus ${p} %. ` +
+            "Verglichen mit „PV ohne Speicher“ – der vorhandene Speicher ist dafür herausgerechnet. " +
+            "„Bezahlt bis Kaufpreis“: bis zu diesem Preis macht er sich in 10 bzw. 15 Jahren bezahlt (ohne Zins, Preissteigerung und Alterung).",
         },
         en: {
           demo: "demo",
@@ -427,6 +437,16 @@
             `${num(p.kwp, 0)} kWp facing south, battery ${num(p.battery_kwh, 0)} kWh / ${num(p.battery_kw, 0)} kW on a hybrid inverter ` +
             `(self-consumption first, not into the car), feed-in tariff ${ct(p.feed_in_rate)} ct/kWh, § 51 EEG`,
           yearSolarTitle: (tariff) => `Saving by PV and battery per month (${tariff})`,
+          sim: "Simulate battery",
+          simTitle: "What would a battery have saved? (action “Simulate battery”)",
+          simSaving: (kwh, kw) => `<b>${kwh} kWh</b> (${kw} kW): saving per year`,
+          simCycles: "Full cycles per year",
+          simPays: "Pays off up to a price of (10 / 15 years)",
+          simOwn: (kwh) => `For comparison: your battery (${kwh} kWh), metered`,
+          simNote: (p) =>
+            `An imagined battery over the year, starting empty, charged only from the PV surplus; power half the size per hour, efficiency per cycle ${p} %. ` +
+            "Compared with “PV without battery” – the existing battery is taken out for that. " +
+            "“Pays off up to”: the purchase price it pays back within 10 or 15 years (no interest, price rises or ageing).",
         },
       };
 
@@ -456,6 +476,8 @@
       const ct = (value) => num(value, 1);
       const eur = (value) =>
         new Intl.NumberFormat(state.lang, { style: "currency", currency: "EUR" }).format(value);
+      const eur0 = (value) =>
+        new Intl.NumberFormat(state.lang, { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value);
       const signedEur = (value) =>
         new Intl.NumberFormat(state.lang, { style: "currency", currency: "EUR", signDisplay: "exceptZero" }).format(value);
       const dateFmt = (iso, opts) => new Date(iso).toLocaleDateString(state.lang, { timeZone: "Europe/Berlin", ...opts });
@@ -778,6 +800,38 @@
           </section>`;
       }
 
+      /** The response of "Speicher simulieren" (house only): per size and tariff. */
+      function batterySection(data, keys, labels) {
+        const tx = t();
+        const sim = data.battery_sim;
+        if (!sim) return "";
+        const rows = Object.fromEntries(sim.tariffs.map((r) => [r.tariff, r]));
+        const line = (name, fn, cls = "") =>
+          `<tr class="${cls}"><td>${name}</td>${keys.map((k) => `<td>${fn(rows[labels[k]])}</td>`).join("")}</tr>`;
+        const sizes = sim.tariffs[0].sizes.map((first, i) => {
+          const size = (r) => r.sizes[i];
+          const pays = (s) => (s.pays_off_up_to ? `${eur0(s.pays_off_up_to["10_years"])} / ${eur0(s.pays_off_up_to["15_years"])}` : "–");
+          return (
+            line(tx.simSaving(num(first.size_kwh, 0), num(first.power_kw, first.power_kw % 1 ? 1 : 0)), (r) => eur(size(r).saving_per_year), "split") +
+            line(escapeHtml(tx.simCycles), (r) => num(size(r).full_cycles_per_year, 0)) +
+            line(escapeHtml(tx.simPays), (r) => pays(size(r)))
+          );
+        });
+        const own = sim.tariffs[0].your_battery_saving === undefined ? ""
+          : line(escapeHtml(tx.simOwn(num(data.pv_system.battery_kwh, 0))), (r) => eur(r.your_battery_saving), "split");
+        const head = `<tr><th></th>${keys.map((k) => `<th>${escapeHtml(labels[k])}</th>`).join("")}</tr>`;
+        return `
+          <section class="section wide">
+            <div class="heading">${icon("home-battery")}<span>${tx.sim}</span></div>
+            <div class="card">
+              <div class="card-title">${tx.simTitle}</div>
+              <table class="year">${head}${sizes.join("")}${own}</table>
+              <div class="footnote" style="padding-top:8px">${escapeHtml(tx.simNote(num(sim.assumptions.efficiency_percent, 0)))}</div>
+              <details><summary>${tx.response}</summary><pre>${escapeHtml(yaml(sim).trimStart())}</pre></details>
+            </div>
+          </section>`;
+      }
+
       // ---- The real card on a made-up Home Assistant ------------------------------------
       // What the card uses of Home Assistant: the entity registry, states, two
       // websocket commands of the recorder, Tarifwacht's own one, ha-card and ha-icon.
@@ -977,7 +1031,8 @@
           solarSection(data, view, keys, labels) +
           devicesSection(data, view, keys, labels) +
           notificationSection(view) +
-          yearSection(data, keys, labels);
+          yearSection(data, keys, labels) +
+          batterySection(data, keys, labels);
         mountCard(data, view);
         document.getElementById("tariff-list").innerHTML = data.tariffs
           .map((d) => {

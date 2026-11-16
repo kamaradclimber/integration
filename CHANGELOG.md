@@ -1,5 +1,11 @@
 # Changelog
 
+## Unveröffentlicht
+
+### Geändert
+
+- **Demo zeigt „Speicher simulieren“.** Beim Haus steht unter dem Jahresrückblick, was ein Speicher mit 5, 10 und 15 kWh in einem Jahr mit jedem Tarif gespart hätte, wie viele Vollzyklen er gemacht hätte und bis zu welchem Kaufpreis er sich bezahlt macht – daneben die Ersparnis des vorhandenen Speichers und die ganze Antwort der Aktion. Gerechnet vom Code der Integration, mit erfundenen Daten.
+
 ## 0.4.0 – 2026-11-15
 
 ### Neu

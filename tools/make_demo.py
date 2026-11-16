@@ -13,7 +13,9 @@ hour, for a year from 1 November 2025, as in Home Assistant.
 The page shows two moments (a winter and a summer evening) and the year in
 review; for each moment the files hold what the dashboard, the devices and
 the blueprint "Monatsübersicht" would show then, and what the long-term
-statistics would answer the card (frontend/tarifwacht-card.js) then.
+statistics would answer the card (frontend/tarifwacht-card.js) then. For
+the house also the answer of the action "Speicher simulieren" over the year
+(`battery_sim.simulate` with the action's defaults).
 """
 
 from __future__ import annotations
@@ -30,6 +32,18 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from custom_components.tarifwacht.battery_sim import (  # noqa: E402
+    DEFAULT_C_RATE,
+    DEFAULT_EFFICIENCY,
+    DEFAULT_SIZES,
+    LIFETIMES,
+    YEAR_DAYS,
+    SimResult,
+    SimSettings,
+    SimTotals,
+    per_year,
+    simulate,
+)
 from custom_components.tarifwacht.const import BERLIN  # noqa: E402
 from custom_components.tarifwacht.engine import Engine, PeriodCosts  # noqa: E402
 from custom_components.tarifwacht.meter import MeterTracker  # noqa: E402
@@ -515,6 +529,103 @@ def compare(engine: Engine, keys: tuple[str, ...], start: datetime, end: datetim
     return response
 
 
+def _simulation_response(simulated: SimResult, real: SolarResult, batteries: list[SimSettings], keys: tuple[str, ...]) -> dict[str, Any]:  # fmt: skip
+    """Like services._simulation_response: per tariff and size the saving,
+    per year, cycles, purchase price it pays off up to; per month the
+    saving only."""
+    days = simulated.days
+    has_battery = any(t.discharged > 0 for t in real.totals.values())
+    grid = batteries[0].grid_charging
+
+    def size_row(sim: SimSettings, t: SimTotals, *, details: bool) -> dict[str, Any]:
+        row: dict[str, Any] = {"size_kwh": sim.size, "saving": round(t.saving, 2)}
+        if grid:
+            row["saving_grid_at_best"] = round(t.saving_grid, 2)
+        if not details:
+            return row
+        yearly = per_year(t.saving, days)
+        row |= {
+            "power_kw": sim.power,
+            "saving_per_year": None if yearly is None else round(yearly, 2),
+            "full_cycles": round(t.discharged / sim.size, 1),
+            "full_cycles_per_year": None
+            if (cycles := per_year(t.discharged / sim.size, days)) is None
+            else round(cycles),
+            "pays_off_up_to": None
+            if yearly is None or yearly <= 0
+            else {f"{years}_years": round(yearly * years) for years in LIFETIMES},
+            "hours_left_out": t.hours_left_out,
+        }
+        if grid:
+            row["grid_charged_kwh"] = round(t.grid_charged, 1)
+        return row
+
+    tariffs = []
+    for key in keys:
+        entry: dict[str, Any] = {
+            "tariff": TARIFFS[key][0],
+            "sizes": [
+                size_row(sim, simulated.totals[key][sim.size], details=True)
+                for sim in batteries
+            ],
+        }
+        if has_battery:
+            entry["your_battery_saving"] = round(real.totals[key].saving_battery, 2)
+        tariffs.append(entry)
+    months = [
+        {
+            "month": month,
+            "tariffs": [
+                {
+                    "tariff": TARIFFS[key][0],
+                    "sizes": [
+                        size_row(sim, per_tariff[key][sim.size], details=False)
+                        for sim in batteries
+                    ],
+                }
+                for key in keys
+                if key in per_tariff
+            ],
+        }
+        for month, per_tariff in simulated.months.items()
+    ]
+    first = batteries[0]
+    assumptions: dict[str, Any] = {
+        "efficiency_percent": round(first.efficiency * 100, 1),
+        "grid_charging": grid,
+    }
+    if grid:
+        assumptions["grid_power_kw"] = first.grid_power
+    return {
+        "days": days,
+        "rough": days < YEAR_DAYS,
+        "assumptions": assumptions,
+        "tariffs": tariffs,
+        "months": months,
+    }
+
+
+def simulate_battery(engine: Engine, keys: tuple[str, ...], hours: dict[datetime, HourFlows], start: datetime, end: datetime) -> dict[str, Any]:  # fmt: skip
+    """The response of the action tarifwacht.simulate_battery with its
+    defaults (services.simulate_battery): sizes 5, 10 and 15 kWh, power half
+    the size per hour, no charging from the grid; the complete hours in
+    [start, end), as runtime.async_battery_simulation computes them."""
+    utc_start, utc_end = start.astimezone(UTC), end.astimezone(UTC)
+    flows = {h: f for h, f in hours.items() if utc_start <= h and h + HOUR <= utc_end}
+    batteries = [
+        SimSettings(size=size, power=size * DEFAULT_C_RATE, efficiency=DEFAULT_EFFICIENCY)
+        for size in DEFAULT_SIZES
+    ]  # fmt: skip
+    market = engine.price_table(MARKET)
+    simulated = simulate(flows, engine.tariffs, SOLAR_SETTINGS, batteries, BERLIN, market)  # fmt: skip
+    real = solar_totals(flows, engine.tariffs, SOLAR_SETTINGS, BERLIN, market)
+    return {
+        "start": start.astimezone(BERLIN).isoformat(),
+        "end": end.astimezone(BERLIN).isoformat(),
+        **_simulation_response(simulated, real, batteries, keys),
+    }
+
+
 MONTHS_EN = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
@@ -747,6 +858,11 @@ def main() -> None:
             ],
             "moments": moments,
             "year": compare(engine, keys, SETUP, END, END, solar),
+            **(
+                {}
+                if solar is None
+                else {"battery_sim": simulate_battery(engine, keys, solar, SETUP, END)}
+            ),
         }
         path = OUT / f"{household}.json"
         with path.open("w", encoding="utf-8", newline="\n") as file:
@@ -766,6 +882,17 @@ def main() -> None:
                     for r in year["pv_battery"]["tariffs"]
                 )
             )
+        if "battery_sim" in result:
+            for r in result["battery_sim"]["tariffs"]:
+                print(
+                    f"  Speicher simuliert ({r['tariff']}): "
+                    + ", ".join(
+                        f"{s['size_kwh']:g} kWh {s['saving_per_year']:.0f} €/Jahr "
+                        f"{s['full_cycles_per_year']} Zyklen"
+                        for s in r["sizes"]
+                    )
+                    + f"; eigener {r.get('your_battery_saving')} €"
+                )
         for key, view in moments.items():
             print(
                 f"  {key}: heute {view['today']}, Monat {view['month']}, günstigster {view['cheapest']}"
