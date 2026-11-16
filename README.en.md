@@ -11,7 +11,7 @@
 
 🇩🇪 [Deutsch](https://github.com/tarifwacht/integration/blob/main/README.md) · 🇬🇧 **English**
 
-**What would your electricity have cost with a different tariff?** Tarifwacht ("tariff watch") prices your actual grid consumption in Home Assistant quarter hour by quarter hour against any number of tariffs – fixed price, dynamic, with or without Modul 3 – and shows which one would have been cheaper. Each dynamic tariff gets the price of **exactly that quarter hour**, not the price of whatever moment the meter happens to report.
+**What would your electricity have cost with a different tariff?** Tarifwacht ("tariff watch") prices your actual grid consumption in Home Assistant quarter hour by quarter hour against any number of tariffs – fixed price, dynamic, with or without Modul 3 – and shows which one would have been cheaper. Each dynamic tariff gets the price of **exactly that quarter hour**, not the price of whatever moment the meter happens to report. And would a (bigger) battery pay off? The action [Simulate battery](#simulate-a-battery-would-a-battery-pay) works it out on your metered hours.
 
 **Try it without installing:** the [demo](https://tarifwacht.github.io/integration/?lang=en) shows the card, the dashboard, devices, monthly summary and year in review for a flat and a house with PV, battery, an EV and a heat pump, there also the saving by PV and battery – with made-up prices and tariffs, but computed by the integration's own code.
 
@@ -42,6 +42,7 @@ The user interface is available in German and English and follows the language o
 - **Price changes from a date**, e.g. new grid fees on 1 January – the old prices still apply before that date.
 - **One-off bonus** per tariff and per price change (a new contract), e.g. a 250 € switching bonus – lowers the total cost once, on the day it is credited.
 - **Base prices** optional, per month or per year, booked pro rata per day.
+- **Credit per year** per tariff, e.g. for Modul 1 (§ 14a EnWG): spread pro rata per day like a base price, see [Modul 3](#modul-3--14a-enwg).
 - **Comparison for any period** via an action, broken down by month – also **before the setup**, as far back as your meter's long-term statistics go: what would last year have cost with each tariff? On request also [written into the long-term statistics](#import-statistics).
 - **Prices every tariff from the setup on:** consumption and prices are stored per quarter hour. A tariff added or corrected later therefore applies to the whole period.
 - **Loses nothing:** if the meter drops out or Home Assistant restarts, the consumption of the gap is booked afterwards. If a price is missing, Tarifwacht never uses 0 €. Meter resets and implausible jumps are detected and not booked.

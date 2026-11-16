@@ -11,7 +11,7 @@
 
 🇩🇪 **Deutsch** · 🇬🇧 [English](https://github.com/tarifwacht/integration/blob/main/README.en.md)
 
-**Was hätte dein Strom mit einem anderen Tarif gekostet?** Tarifwacht rechnet deinen tatsächlichen Strombezug in Home Assistant Viertelstunde für Viertelstunde gegen beliebig viele Tarife – Festpreis, dynamisch, mit oder ohne Modul 3 – und zeigt, welcher günstiger gewesen wäre. Jeder dynamische Tarif bekommt dabei den Preis **genau dieser Viertelstunde**, nicht den Preis des Augenblicks, in dem der Zähler zufällig meldet.
+**Was hätte dein Strom mit einem anderen Tarif gekostet?** Tarifwacht rechnet deinen tatsächlichen Strombezug in Home Assistant Viertelstunde für Viertelstunde gegen beliebig viele Tarife – Festpreis, dynamisch, mit oder ohne Modul 3 – und zeigt, welcher günstiger gewesen wäre. Jeder dynamische Tarif bekommt dabei den Preis **genau dieser Viertelstunde**, nicht den Preis des Augenblicks, in dem der Zähler zufällig meldet. Und lohnt sich ein (größerer) Speicher? Die Aktion [Speicher simulieren](#speicher-simulieren-lohnt-sich-ein-speicher) rechnet es an deinen gemessenen Stunden durch.
 
 **Ausprobieren ohne Installation:** Die [Demo](https://tarifwacht.github.io/integration/?lang=de) zeigt die Karte, Dashboard, Geräte, Monatsübersicht und Jahresrückblick für eine Wohnung und ein Haus mit PV, Speicher, E-Auto und Wärmepumpe, dort auch die Ersparnis durch PV und Speicher – mit erfundenen Preisen und Tarifen, aber gerechnet vom Code der Integration.
 
@@ -40,6 +40,7 @@ Die Oberfläche gibt es auf Deutsch und Englisch; sie folgt der Sprache deines H
 - **Preisänderungen ab einem Datum**, z. B. neue Netzentgelte zum 1. Januar – davor gelten die alten Preise weiter.
 - **Einmaliger Bonus** je Tarif und je Preisänderung (neuer Vertrag), z. B. 250 € Wechselbonus – senkt die Kosten gesamt einmal, am Tag der Gutschrift.
 - **Grundpreise** optional, pro Monat oder pro Jahr, tageweise anteilig.
+- **Gutschrift pro Jahr** je Tarif, z. B. für Modul 1 (§ 14a EnWG): tageweise anteilig wie ein Grundpreis, siehe [Modul 3](#modul-3--14a-enwg).
 - **Vergleich für einen beliebigen Zeitraum** per Aktion, je Monat aufgeschlüsselt – auch **vor der Einrichtung**, so weit die Langzeitstatistik deines Zählers zurückreicht: Was hätte dich das letzte Jahr mit jedem Tarif gekostet? Auf Wunsch auch [in die Langzeitstatistik nachgetragen](#statistik-nachtragen).
 - **Rechnet jeden Tarif ab der Einrichtung:** Verbrauch und Preise werden je Viertelstunde gespeichert. Ein später hinzugefügter oder korrigierter Tarif gilt deshalb für den ganzen Zeitraum; kennt der Preissensor eines neuen Tarifs die Zeit davor nicht, holt Tarifwacht die Preise aus dem Recorder bzw. – nur mit deinem Haken im Tarif – von SMARD.de.
 - **Verliert nichts:** Fällt der Zähler aus oder startet Home Assistant neu, wird der Verbrauch der Lücke nachgebucht. Fehlt ein Preis, rechnet Tarifwacht nie mit 0 €. Zähler-Resets und unplausible Sprünge werden erkannt und nicht gebucht.
