@@ -4,5 +4,8 @@
     "<HA-Adresse>": "<HA address>",
     "screenshots/karte.png": "screenshots/karte-en.png",
     "Tarifwacht/<Version>": "Tarifwacht/<version>"
+  },
+  "paragraphs": {
+    "(top)": 1
   }
 }

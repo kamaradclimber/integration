@@ -84,9 +84,9 @@ Note: the old HACS dashboard (before Home Assistant 2026.11) does not show the i
 
 ## Setup
 
-1. **Grid import meter:** name (e.g. "Home") and meter.
+1. **Grid import meter:** name (e.g. "Home") and meter. If a grid import is set up in the energy dashboard, that meter is already in the field. A further entry is only meant for a further meter: further tariffs for the same meter go to the existing entry under *Add tariff*, and the form then says so too.
 2. **Fixed-price tariff:** energy price (ct/kWh, gross), optionally the base price per month. It becomes "My current tariff".
-3. **Dynamic tariff:** first choose the kind – **exchange price plus surcharges** (recommended, see [Adding a dynamic tariff](#adding-a-dynamic-tariff)) or a sensor with the total price (also your own tariff; calculates only from the setup on) –, then the prices.
+3. **Dynamic tariff:** first choose the kind – **exchange price plus surcharges** (recommended, see [Adding a dynamic tariff](#adding-a-dynamic-tariff)) or a sensor with the total price (also your own tariff; calculates only from the setup on) –, then the prices. Tarifwacht suggests the price sensor when it finds one: for the exchange price the one of Einspeisewacht or the market price of EPEX Spot, for the total price the total price of EPEX Spot. A new tariff under *Add tariff* first gets the sensor of a tariff of the same kind. Every suggestion can be changed.
 
 This creates the first two tariffs. If you set up Tarifwacht before 0.1.0 with a total price sensor: add the dynamic tariff a second time as "exchange price plus surcharges", then you can delete the old one.
 
@@ -632,4 +632,4 @@ By the same author and built the same way: set up in the UI, in German and Engli
 
 ## License
 
-MIT. Historical exchange prices (only for comparisons before the setup): Bundesnetzagentur | [SMARD.de](https://www.smard.de), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The images in this README show a demo entry with invented consumption and invented prices.
+MIT. Historical exchange prices (only on your action: comparisons before the setup, importing statistics, the tick on an exchange price tariff added later): Bundesnetzagentur | [SMARD.de](https://www.smard.de), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The images in this README show a demo entry with invented consumption and invented prices.
