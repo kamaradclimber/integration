@@ -13,7 +13,12 @@ from custom_components.tarifwacht.config_flow import (
     _tariff_data,
     _tariff_schema,
 )
-from custom_components.tarifwacht.const import DOMAIN, KINDS, VERSION
+from custom_components.tarifwacht.const import (
+    DOMAIN,
+    KIND_TIME_OF_USE,
+    KINDS,
+    VERSION,
+)
 from custom_components.tarifwacht.sensor import (
     DIFFERENCE,
     ENERGY,
@@ -24,6 +29,7 @@ from custom_components.tarifwacht.sensor import (
 )
 from custom_components.tarifwacht.tariff_config import change_fields
 from custom_components.tarifwacht.tariffs import BasePeriod
+from custom_components.tarifwacht.time_of_use import TEMPLATES, WEEKDAYS
 
 ROOT = Path(__file__).parent.parent
 INTEGRATION = ROOT / "custom_components" / DOMAIN
@@ -91,7 +97,11 @@ def test_every_sensor_translated() -> None:
 
 def test_tariff_kinds_translated() -> None:
     tariff = load(INTEGRATION / "strings.json")["config_subentries"]["tariff"]
-    assert set(tariff["step"]["user"]["menu_options"]) == set(KINDS)
+    # A time-of-use tariff is chosen through its templates.
+    menu = set(tariff["step"]["user"]["menu_options"])
+    assert menu == (set(KINDS) - {KIND_TIME_OF_USE}) | {"time_of_use_template"}
+    templates = set(tariff["step"]["time_of_use_template"]["menu_options"])
+    assert templates == {f"tou_{key}" for key in TEMPLATES} | {"tou_custom"}
     for kind in KINDS:
         schema = _tariff_schema(kind).schema
         sections = {str(k): v for k, v in schema.items() if isinstance(v, section)}
@@ -150,12 +160,22 @@ def test_price_change_fields_translated() -> None:
     step = load(INTEGRATION / "strings.json")["config_subentries"]["tariff"]["step"]
     fields = {"from"} | {key for kind in KINDS for key in change_fields(kind)}
     # Modul 3 is stored as one value but entered in six fields (a fixed
-    # price: eight, with the grid fee it contains and the VAT).
-    fields = (fields - {"modul3"}) | set(step["modul3_fixed"]["data"])
+    # price: eight, with the grid fee it contains and the VAT); the time
+    # windows in four sections.
+    fields = (fields - {"modul3", "time_windows"}) | set(step["modul3_fixed"]["data"])
     # VAT and base price period under "More", Modul 3 in its own section.
     add_change = step["add_change"]
     sections = add_change["sections"]
-    assert set(sections) == {"details_section", "modul3_section", "bonus_section"}
+    windows = {f"window_{n}" for n in range(1, 5)}
+    assert set(sections) == {
+        "details_section",
+        "modul3_section",
+        "bonus_section",
+        *windows,
+    }
+    for name in windows:
+        assert sections[name] == step["time_of_use"]["sections"][name]
+    sections = {k: v for k, v in sections.items() if k not in windows}
     assert set(sections["details_section"]["data"]) == {"vat", "base_period"}
     # The bonus of a new contract, as in the tariff form.
     assert (
@@ -178,7 +198,11 @@ def test_price_change_fields_translated() -> None:
 def test_modul3_fields_translated() -> None:
     strings = load(INTEGRATION / "strings.json")
     steps = strings["config_subentries"]["tariff"]["step"]
-    for step, kind in (("modul3", "dynamic_market"), ("modul3_fixed", "fixed")):
+    for step, kind in (
+        ("modul3", "dynamic_market"),
+        ("modul3_fixed", "fixed"),
+        ("modul3_time_of_use", "time_of_use"),
+    ):
         fields = {str(key) for key in _modul3_fields(kind)}
         assert set(steps[step]["data"]) == fields, step
     assert set(steps["modul3_fixed"]["data"]) - set(steps["modul3"]["data"]) == {
@@ -186,6 +210,8 @@ def test_modul3_fields_translated() -> None:
         "vat",
     }
     assert set(strings["selector"]["quarters"]["options"]) == {"1", "2", "3", "4"}
+    weekdays = set(strings["selector"]["weekdays"]["options"])
+    assert weekdays == {str(d) for d in WEEKDAYS}
 
 
 def test_every_entity_and_action_has_an_icon() -> None:

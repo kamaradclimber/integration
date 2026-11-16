@@ -15,7 +15,7 @@ flat.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import date
 from typing import Any
 
@@ -64,13 +64,16 @@ from .const import (
     CONF_PRICE_ENTITY,
     CONF_RENAMED,
     CONF_SMARD_FILL,
+    CONF_TIME_WINDOWS,
     CONF_VAT,
     DEFAULT_VAT,
     DOMAIN,
     KIND_DYNAMIC_MARKET,
     KIND_DYNAMIC_TOTAL,
     KIND_FIXED,
+    KIND_TIME_OF_USE,
     KINDS,
+    KINDS_WITHOUT_SENSOR,
     SECTION_BONUS,
     SECTION_DETAILS,
     SECTION_MODUL3,
@@ -102,8 +105,19 @@ from .tariff_config import (
     price_entity,
     state_at,
 )
-from .tariff_summary import edit_hint, summary
+from .tariff_summary import edit_hint, summary, template_hint
 from .tariffs import BasePeriod
+from .time_of_use import (
+    ALL_QUARTERS,
+    KEY_DAYS,
+    KEY_PRICE,
+    KEY_QUARTERS,
+    KEY_TIMES,
+    MAX_WINDOWS,
+    TEMPLATES,
+    WEEKDAYS,
+    windows_error,
+)
 
 
 def _number(unit: str, step: float, maximum: float) -> selector.NumberSelector:
@@ -453,20 +467,25 @@ def details_suggested(values: Mapping[str, Any]) -> dict[str, Any]:
     return {key: values[key] for key in DETAILS if key in values}
 
 
-def _tariff_schema(kind: str, *, setup: bool = False) -> vol.Schema:
+def _tariff_schema(
+    kind: str, *, setup: bool = False, open_windows: int = 1
+) -> vol.Schema:
     """The form of a tariff: name, prices and "my current tariff" at first
     glance. At the setup without name, current, SMARD.de and bonus (no time
     before to fill; a bonus is added in the tariff later), the base price
-    per month."""
+    per month. A time-of-use tariff shows its windows in sections, the
+    first `open_windows` open."""
     fields: dict[Any, Any] = {}
     if not setup:
         fields[vol.Required(CONF_NAME)] = selector.TextSelector()
-    if kind == KIND_FIXED:
+    if kind in KINDS_WITHOUT_SENSOR:
         # Optional: a required number field shows its minimum (0) instead of
         # staying empty; the step reports a missing price itself.
         fields[vol.Optional(CONF_PRICE)] = PRICE_NUMBER
     else:
         fields[vol.Required(CONF_PRICE_ENTITY)] = PRICE_SENSOR
+    if kind == KIND_TIME_OF_USE:
+        fields |= window_sections(open_windows)
     if kind == KIND_DYNAMIC_MARKET:
         for key in (CONF_GRID_FEE, CONF_LEVIES, CONF_MARGIN):
             fields[vol.Optional(key)] = PRICE_NUMBER
@@ -531,10 +550,12 @@ def credit_of(user_input: dict[str, Any], fallback: Mapping[str, Any]) -> float:
 def _tariff_data(kind: str, user_input: dict[str, Any]) -> dict[str, Any]:
     """What a tariff subentry stores (the name is its title)."""
     data: dict[str, Any] = {CONF_KIND: kind}
-    if kind == KIND_FIXED:
+    if kind in KINDS_WITHOUT_SENSOR:
         data[CONF_PRICE] = float(user_input[CONF_PRICE])
     else:
         data[CONF_PRICE_ENTITY] = user_input[CONF_PRICE_ENTITY]
+    if kind == KIND_TIME_OF_USE:
+        data[CONF_TIME_WINDOWS] = user_input[CONF_TIME_WINDOWS]
     if kind == KIND_DYNAMIC_MARKET:
         for key in (CONF_GRID_FEE, CONF_LEVIES, CONF_MARGIN):
             data[key] = float(user_input.get(key) or 0)
@@ -549,6 +570,105 @@ def _tariff_data(kind: str, user_input: dict[str, Any]) -> dict[str, Any]:
     if credit := credit_of(user_input, {}):
         data[CONF_CREDIT] = credit
     return data
+
+
+# Time windows of a time-of-use tariff: one section each (form only; stored
+# as the list CONF_TIME_WINDOWS).
+WINDOW_SECTIONS = tuple(f"window_{n}" for n in range(1, MAX_WINDOWS + 1))
+W_PRICE = "window_price"
+W_TIMES = "window_times"
+W_DAYS = "window_days"
+W_QUARTERS = "window_quarters"
+WEEKDAY_SELECTOR = selector.SelectSelector(
+    selector.SelectSelectorConfig(
+        options=[str(d) for d in WEEKDAYS],
+        multiple=True,
+        translation_key="weekdays",
+        mode=selector.SelectSelectorMode.LIST,
+    )
+)
+
+
+def window_sections(open_windows: int) -> dict[Any, Any]:
+    """The sections "Time window 1" to "4", the first `open_windows` open."""
+    return {
+        vol.Optional(name): _collapsed(
+            {
+                vol.Optional(W_PRICE): PRICE_NUMBER,
+                vol.Optional(W_TIMES): selector.TextSelector(),
+                vol.Optional(W_DAYS): WEEKDAY_SELECTOR,
+                vol.Optional(W_QUARTERS): QUARTERS,
+            },
+            collapsed=number >= max(open_windows, 1),
+        )
+        for number, name in enumerate(WINDOW_SECTIONS)
+    }
+
+
+def windows_suggested(items: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """The sections filled from stored windows; the empty ones with every
+    weekday and quarter ticked."""
+    suggested: dict[str, Any] = {}
+    for number, name in enumerate(WINDOW_SECTIONS):
+        item = items[number] if number < len(items) else {}
+        values: dict[str, Any] = {
+            W_DAYS: [str(d) for d in item.get(KEY_DAYS, WEEKDAYS)],
+            W_QUARTERS: [str(q) for q in item.get(KEY_QUARTERS, ALL_QUARTERS)],
+        }
+        if item.get(KEY_PRICE) is not None:
+            values[W_PRICE] = item[KEY_PRICE]
+        if item.get(KEY_TIMES):
+            values[W_TIMES] = item[KEY_TIMES]
+        suggested[name] = values
+    return suggested
+
+
+def windows_from_input(
+    user_input: Mapping[str, Any], stored: Sequence[Mapping[str, Any]]
+) -> tuple[list[dict[str, Any]], dict[str, str]]:
+    """The windows of the form as stored, and errors by section (the form
+    shows them at the section).
+
+    A section with neither price nor times is left out. A section that did
+    not come back keeps the stored window of its place. Without any window
+    the tariff would be a fixed price: the first section says so.
+    """
+    items: list[dict[str, Any]] = []
+    sections: list[str] = []
+    for number, name in enumerate(WINDOW_SECTIONS):
+        if name not in user_input:
+            if number < len(stored):
+                items.append(dict(stored[number]))
+                sections.append(name)
+            continue
+        part = user_input[name] or {}
+        times = str(part.get(W_TIMES) or "").strip()
+        price = part.get(W_PRICE)
+        if not times and price is None:
+            continue
+        items.append(
+            {
+                KEY_PRICE: None if price is None else float(price),
+                KEY_TIMES: times,
+                KEY_DAYS: sorted(int(d) for d in part.get(W_DAYS, WEEKDAYS) or []),
+                KEY_QUARTERS: sorted(
+                    int(q) for q in part.get(W_QUARTERS, ALL_QUARTERS) or []
+                ),
+            }
+        )
+        sections.append(name)
+    if not items:
+        return items, {WINDOW_SECTIONS[0]: "tou_window_required"}
+    if (error := windows_error(items)) is not None:
+        number, key = error
+        return items, {sections[number - 1]: key}
+    return items, {}
+
+
+def open_window_count(items: Sequence[Mapping[str, Any]]) -> int:
+    """How many window sections the form shows open: the filled ones, at
+    least one."""
+    return max(1, min(len(items), MAX_WINDOWS))
 
 
 # Modul 3 form fields (stored together under "modul3").
@@ -572,9 +692,9 @@ QUARTERS = selector.SelectSelector(
 
 
 def _modul3_fields(kind: str, *, in_section: bool = False) -> dict[Any, Any]:
-    if kind != KIND_FIXED and not in_section:
+    if kind not in KINDS_WITHOUT_SENSOR and not in_section:
         fields: dict[Any, Any] = {vol.Required(M3_ACTIVE): selector.BooleanSelector()}
-    elif kind != KIND_FIXED:
+    elif kind not in KINDS_WITHOUT_SENSOR:
         fields = {vol.Optional(M3_ACTIVE): selector.BooleanSelector()}
     else:
         # Optional: a price change of a fixed tariff without the Modul 3
@@ -596,7 +716,7 @@ def _modul3_fields(kind: str, *, in_section: bool = False) -> dict[Any, Any]:
 def _modul3_suggested(modul3: dict[str, Any] | None, kind: str) -> dict[str, Any]:
     modul3 = modul3 or {}
     fixed: dict[str, Any] = {}
-    if kind == KIND_FIXED:
+    if kind in KINDS_WITHOUT_SENSOR:
         fixed = {
             M3_STANDARD: modul3.get(MODUL3_STANDARD),
             M3_VAT: modul3.get(MODUL3_VAT, DEFAULT_VAT),
@@ -627,14 +747,14 @@ def _modul3_from_input(
         "nt_windows": (user_input.get(M3_NT_WINDOWS) or "").strip(),
         "ht_windows": (user_input.get(M3_HT_WINDOWS) or "").strip(),
     }
-    if kind == KIND_FIXED:
+    if kind in KINDS_WITHOUT_SENSOR:
         vat = user_input.get(M3_VAT)
         modul3[MODUL3_STANDARD] = float(user_input.get(M3_STANDARD) or 0)
         modul3[MODUL3_VAT] = float(DEFAULT_VAT if vat is None else vat)
     errors: dict[str, str] = {}
     if not modul3["active"]:
         return modul3, errors
-    if kind == KIND_FIXED and not modul3[MODUL3_STANDARD]:
+    if kind in KINDS_WITHOUT_SENSOR and not modul3[MODUL3_STANDARD]:
         errors[M3_STANDARD] = "price_required"
     windows: dict[str, list[tuple[int, int]]] = {}
     for field, key in ((M3_NT_WINDOWS, "nt_windows"), (M3_HT_WINDOWS, "ht_windows")):
@@ -669,12 +789,60 @@ class TariffSubentryFlow(ConfigSubentryFlow):
 
     # The price sensor the edit form showed (to follow a rename meanwhile).
     _shown_price: str | None = None
+    # Template of a new time-of-use tariff (time_of_use.TEMPLATES), "" none.
+    _template: str = ""
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Choose the kind of tariff."""
-        return self.async_show_menu(step_id="user", menu_options=list(KINDS))
+        """Choose the kind of tariff; a time-of-use tariff via its templates."""
+        options = [k for k in KINDS if k != KIND_TIME_OF_USE]
+        return self.async_show_menu(
+            step_id="user", menu_options=[*options, "time_of_use_template"]
+        )
+
+    async def async_step_time_of_use_template(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Time windows of known tariffs, or empty ones."""
+        return self.async_show_menu(
+            step_id="time_of_use_template",
+            menu_options=[*(f"tou_{key}" for key in TEMPLATES), "tou_custom"],
+        )
+
+    async def async_step_tou_octopus_heat(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_template("octopus_heat")
+
+    async def async_step_tou_octopus_go(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_template("octopus_go")
+
+    async def async_step_tou_enbw_sparzeit(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_template("enbw_sparzeit")
+
+    async def async_step_tou_ht_nt(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_template("ht_nt")
+
+    async def async_step_tou_custom(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_template("")
+
+    async def _async_template(self, key: str) -> SubentryFlowResult:
+        self._template = key
+        return await self._async_tariff_step(KIND_TIME_OF_USE, None)
+
+    async def async_step_time_of_use(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        return await self._async_tariff_step(KIND_TIME_OF_USE, user_input)
 
     async def async_step_fixed(
         self, user_input: dict[str, Any] | None = None
@@ -697,7 +865,7 @@ class TariffSubentryFlow(ConfigSubentryFlow):
         """Edit the tariff, Modul 3, or add or remove a price change."""
         data = self._get_reconfigure_subentry().data
         options = ["edit"]
-        if data[CONF_KIND] in (KIND_DYNAMIC_MARKET, KIND_FIXED):
+        if data[CONF_KIND] in (KIND_DYNAMIC_MARKET, *KINDS_WITHOUT_SENSOR):
             options.append("modul3")
         options.append("add_change")
         if data.get(CONF_CHANGES):
@@ -738,9 +906,19 @@ class TariffSubentryFlow(ConfigSubentryFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
         """Time-variable grid fee (values from the start of the tariff)."""
-        if self._get_reconfigure_subentry().data[CONF_KIND] == KIND_FIXED:
+        kind = self._get_reconfigure_subentry().data[CONF_KIND]
+        if kind == KIND_FIXED:
             return await self.async_step_modul3_fixed(user_input)
+        if kind == KIND_TIME_OF_USE:
+            return await self.async_step_modul3_time_of_use(user_input)
         return await self._async_modul3_step("modul3", user_input)
+
+    async def async_step_modul3_time_of_use(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Modul 3 passed on by a time-of-use supplier: like a fixed price,
+        the price of each quarter hour moves by the grid fee difference."""
+        return await self._async_modul3_step("modul3_time_of_use", user_input)
 
     async def async_step_modul3_fixed(
         self, user_input: dict[str, Any] | None = None
@@ -794,7 +972,7 @@ class TariffSubentryFlow(ConfigSubentryFlow):
             modul3_input = user_input.get(SECTION_MODUL3)
             if any(c[CONF_FROM] == valid_from for c in changes):
                 errors[CONF_FROM] = "change_exists"
-            elif kind == KIND_FIXED and not user_input.get(CONF_PRICE):
+            elif kind in KINDS_WITHOUT_SENSOR and not user_input.get(CONF_PRICE):
                 errors[CONF_PRICE] = "price_required"
             elif error := bonus_error(user_input):
                 errors["base"] = error
@@ -812,7 +990,8 @@ class TariffSubentryFlow(ConfigSubentryFlow):
                         # Without the section (or, for a fixed price, its
                         # switch) the Modul 3 values before stay valid.
                         if modul3_input is None or (
-                            kind == KIND_FIXED and M3_ACTIVE not in modul3_input
+                            kind in KINDS_WITHOUT_SENSOR
+                            and M3_ACTIVE not in modul3_input
                         ):
                             continue
                         change[key], modul3_errors = _modul3_from_input(
@@ -822,6 +1001,11 @@ class TariffSubentryFlow(ConfigSubentryFlow):
                             errors["base"] = modul3_base_error(modul3_errors)
                     elif key == CONF_BASE_PERIOD:
                         change[key] = flat[key]
+                    elif key == CONF_TIME_WINDOWS:
+                        change[key], window_errors = windows_from_input(
+                            user_input, today.get(CONF_TIME_WINDOWS) or []
+                        )
+                        errors.update(window_errors)
                     else:
                         change[key] = float(flat.get(key) or 0)
                 if not errors:
@@ -835,8 +1019,12 @@ class TariffSubentryFlow(ConfigSubentryFlow):
         # At first glance the prices; VAT, base price period and Modul 3 in
         # collapsed sections - Modul 3 open if the tariff uses it today.
         fields: dict[Any, Any] = {vol.Required(CONF_FROM): selector.DateSelector()}
+        windows_today = today.get(CONF_TIME_WINDOWS) or []
         for key in change_fields(kind):
             if key in (CONF_MODUL3, *DETAILS):
+                continue
+            if key == CONF_TIME_WINDOWS:
+                fields |= window_sections(open_window_count(windows_today))
                 continue
             fields[vol.Optional(key)] = (
                 BASE_NUMBER if key == CONF_BASE_PRICE else PRICE_NUMBER
@@ -863,6 +1051,8 @@ class TariffSubentryFlow(ConfigSubentryFlow):
                 if today.get(CONF_CREDIT)
                 else {},
             }
+            if kind == KIND_TIME_OF_USE:
+                suggested |= windows_suggested(windows_today)
         return self.async_show_form(
             step_id="add_change",
             data_schema=self.add_suggested_values_to_schema(
@@ -937,18 +1127,23 @@ class TariffSubentryFlow(ConfigSubentryFlow):
                 for s in tariff_subentries(entry)
             ):
                 errors[CONF_NAME] = "name_in_use"
-            if kind == KIND_FIXED and not user_input.get(CONF_PRICE):
+            if kind in KINDS_WITHOUT_SENSOR and not user_input.get(CONF_PRICE):
                 errors[CONF_PRICE] = "price_required"
+            if kind == KIND_TIME_OF_USE:
+                stored = subentry.data.get(CONF_TIME_WINDOWS) if subentry else None
+                windows, window_errors = windows_from_input(raw, stored or [])
+                errors.update(window_errors)
+                user_input = {**user_input, CONF_TIME_WINDOWS: windows}
             if (
                 subentry is not None
-                and kind != KIND_FIXED
+                and kind not in KINDS_WITHOUT_SENSOR
                 and user_input[CONF_PRICE_ENTITY] == self._shown_price
                 and (current := subentry.data.get(CONF_PRICE_ENTITY))
                 != self._shown_price
             ):
                 # Renamed while the form was open: it still showed the old id.
                 user_input = {**user_input, CONF_PRICE_ENTITY: current}
-            if kind != KIND_FIXED and (
+            if kind not in KINDS_WITHOUT_SENSOR and (
                 error := validate_price_entity(self.hass, user_input[CONF_PRICE_ENTITY])
             ):
                 errors[CONF_PRICE_ENTITY] = error
@@ -974,8 +1169,12 @@ class TariffSubentryFlow(ConfigSubentryFlow):
                     )
                 return self.async_create_entry(title=name, data=data)
 
+        open_windows = 1
         if user_input is not None:
             suggested = raw
+            open_windows = sum(
+                1 for name in WINDOW_SECTIONS if (raw.get(name) or {}).get(W_TIMES)
+            )
         elif subentry is not None:
             # SMARD.de only with consent: unticked unless agreed before.
             suggested = {
@@ -990,6 +1189,9 @@ class TariffSubentryFlow(ConfigSubentryFlow):
                 },
             }
             self._shown_price = subentry.data.get(CONF_PRICE_ENTITY)
+            windows = subentry.data.get(CONF_TIME_WINDOWS) or []
+            suggested |= windows_suggested(windows)
+            open_windows = open_window_count(windows)
         else:
             suggested = {
                 SECTION_DETAILS: {
@@ -999,7 +1201,13 @@ class TariffSubentryFlow(ConfigSubentryFlow):
                 CONF_CURRENT: False,
                 CONF_SMARD_FILL: True,
             }
-            if kind != KIND_FIXED and (
+            if kind == KIND_TIME_OF_USE:
+                name, windows = TEMPLATES.get(self._template, ("", []))
+                if name:
+                    suggested[CONF_NAME] = name
+                suggested |= windows_suggested(windows)
+                open_windows = open_window_count(windows)
+            if kind not in KINDS_WITHOUT_SENSOR and (
                 price := suggested_price(
                     self.hass, kind, (s.data for s in tariff_subentries(entry))
                 )
@@ -1008,13 +1216,17 @@ class TariffSubentryFlow(ConfigSubentryFlow):
         return self.async_show_form(
             step_id=kind,
             data_schema=self.add_suggested_values_to_schema(
-                _tariff_schema(kind), suggested
+                _tariff_schema(kind, open_windows=open_windows), suggested
             ),
             errors=errors,
             # Editing shows the values from the start: say so, and where a
             # later price goes.
             description_placeholders={
                 "edit_hint": edit_hint(self._german) if subentry is not None else "",
+                # Which window of a template is which price level.
+                "template_hint": template_hint(self._template, self._german)
+                if subentry is None
+                else "",
                 # Where to report a price source not recognised.
                 "issues_url": ISSUES_URL,
             },

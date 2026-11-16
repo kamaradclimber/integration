@@ -30,18 +30,47 @@ from .const import (
     CONF_MARGIN,
     CONF_MODUL3,
     CONF_PRICE,
+    CONF_TIME_WINDOWS,
     CONF_VAT,
     KIND_DYNAMIC_MARKET,
     KIND_DYNAMIC_TOTAL,
     KIND_FIXED,
+    KIND_TIME_OF_USE,
 )
 from .tariff_config import bonus_list, state_at
+from .time_of_use import (
+    ALL_QUARTERS,
+    KEY_DAYS,
+    KEY_PRICE,
+    KEY_QUARTERS,
+    KEY_TIMES,
+    WEEKDAYS,
+    format_times,
+    price_from_data,
+)
 
 _WORDS: dict[str, dict[str, str]] = {
     "de": {
         KIND_FIXED: "Festpreis",
         KIND_DYNAMIC_MARKET: "Börsenpreis plus Aufschläge",
         KIND_DYNAMIC_TOTAL: "Sensor mit Gesamtpreis",
+        KIND_TIME_OF_USE: "Zeitfenster-Tarif",
+        "otherwise": "sonst",
+        "weekdays": "Mo Di Mi Do Fr Sa So",
+        "tou_octopus_heat": "Vorlage Octopus Heat: Der Arbeitspreis oben ist der "
+        "Standardpreis, Zeitfenster 1 der niedrige und Zeitfenster 2 der hohe Preis. "
+        "Die Preise hängen von der Postleitzahl ab: bitte aus deinem Vertrag oder "
+        "Angebot eintragen.",
+        "tou_octopus_go": "Vorlage Octopus Go: Der Arbeitspreis oben gilt "
+        "tagsüber, Zeitfenster 1 ist der günstige Preis in der Nacht. Die Preise "
+        "bitte aus deinem Vertrag oder Angebot eintragen.",
+        "tou_enbw_sparzeit": "Vorlage EnBW SparZeit: Der Arbeitspreis oben ist "
+        "der NormalZeit-Preis, Zeitfenster 1 die SparZeit. Die Preise bitte aus "
+        "deinem Vertrag oder Angebot eintragen.",
+        "tou_ht_nt": "Vorlage HT/NT: Der Arbeitspreis oben ist der Niedertarif "
+        "(NT), Zeitfenster 1 der Hochtarif (HT) Montag bis Freitag 6–21 Uhr wie "
+        "im Netz der Stadtwerke München. Die HT-Zeiten legt dein Netzbetreiber "
+        "fest: bitte mit dem Preisblatt vergleichen.",
         "month": "Monat",
         "year": "Jahr",
         "today": "heute",
@@ -78,6 +107,23 @@ _WORDS: dict[str, dict[str, str]] = {
         KIND_FIXED: "Fixed price",
         KIND_DYNAMIC_MARKET: "Exchange price plus surcharges",
         KIND_DYNAMIC_TOTAL: "Sensor with the total price",
+        KIND_TIME_OF_USE: "Time-of-use tariff",
+        "otherwise": "otherwise",
+        "weekdays": "Mon Tue Wed Thu Fri Sat Sun",
+        "tou_octopus_heat": "Template Octopus Heat: the energy price above is the "
+        "standard price, time window 1 the low and time window 2 the high price. "
+        "The prices depend on the postcode: please enter them from your contract "
+        "or offer.",
+        "tou_octopus_go": "Template Octopus Go: the energy price above applies "
+        "during the day, time window 1 is the cheap price at night. Please enter "
+        "the prices from your contract or offer.",
+        "tou_enbw_sparzeit": "Template EnBW SparZeit: the energy price above is "
+        "the NormalZeit price, time window 1 the SparZeit. Please enter the "
+        "prices from your contract or offer.",
+        "tou_ht_nt": "Template HT/NT: the energy price above is the low rate "
+        "(NT), time window 1 the high rate (HT) Monday to Friday 6:00–21:00 as in "
+        "the grid of Stadtwerke München. Your grid operator sets the HT times: "
+        "please compare with its price sheet.",
         "month": "month",
         "year": "year",
         "today": "today",
@@ -228,6 +274,59 @@ def _vat(values: Mapping[str, Any], german: bool) -> str:
     return f"{_words(german)['vat']} {_number(vat, german, 1)} %"
 
 
+def _days(days: list[int], german: bool) -> str:
+    """ "Mo-Fr", "Sa, So"; "" for every day."""
+    names = _words(german)["weekdays"].split()
+    chosen = sorted({int(d) for d in days})
+    if chosen == list(WEEKDAYS):
+        return ""
+    runs: list[list[int]] = []
+    for day in chosen:
+        if runs and runs[-1][-1] == day - 1:
+            runs[-1].append(day)
+        else:
+            runs.append([day])
+    return ", ".join(
+        f"{names[run[0]]}–{names[run[-1]]}"
+        if len(run) > 2
+        else ", ".join(names[d] for d in run)
+        for run in runs
+    )
+
+
+def windows_text(values: Mapping[str, Any], german: bool) -> str:
+    """ "20 ct 02:00-06:00, 12:00-16:00; 35 ct 18:00-21:00 (Mo-Fr)": the
+    time windows of a time-of-use price state (en dashes in the text)."""
+    parts = []
+    for item in values.get(CONF_TIME_WINDOWS) or []:
+        text = f"{_number(float(item.get(KEY_PRICE) or 0), german)} ct " + format_times(
+            str(item.get(KEY_TIMES) or "")
+        )
+        limits = [
+            _days(item.get(KEY_DAYS, list(WEEKDAYS)), german),
+            _quarter_list(item.get(KEY_QUARTERS, list(ALL_QUARTERS))),
+        ]
+        if limits := [x for x in limits if x]:
+            text += f" ({', '.join(limits)})"
+        parts.append(text)
+    return "; ".join(parts)
+
+
+def _quarter_list(quarters: list[int]) -> str:
+    chosen = sorted({int(q) for q in quarters})
+    if chosen == list(ALL_QUARTERS):
+        return ""
+    return ", ".join(f"Q{q}" for q in chosen)
+
+
+def template_hint(key: str, german: bool) -> str:
+    """The paragraph under the form of a new time-of-use tariff from a
+    template: which window is which price level; "" without a template."""
+    if not key:
+        return ""
+    return "\n\n" + _words(german)[f"tou_{key}"]
+
+
 def state_text(
     kind: str,
     values: Mapping[str, Any],
@@ -245,6 +344,12 @@ def state_text(
         price = f"{_number(float(values.get(CONF_PRICE) or 0), german)} ct/kWh"
         base = float(values.get(CONF_BASE_PRICE) or 0)
         text = f"{price} + {_base(values, german, label=False)}" if base else price
+        return text + _credit(values, german) + modul3
+    if kind == KIND_TIME_OF_USE:
+        price = f"{_number(float(values.get(CONF_PRICE) or 0), german)} ct/kWh"
+        text = f"{windows_text(values, german)}; {words['otherwise']} {price}"
+        if float(values.get(CONF_BASE_PRICE) or 0):
+            text += f" + {_base(values, german, label=False)}"
         return text + _credit(values, german) + modul3
     if kind == KIND_DYNAMIC_MARKET:
         parts = [words["exchange"]] if today else []
@@ -336,8 +441,18 @@ def _values(
     """The values of a price state for attributes, with their units;
     `credit`: with the credit per year (if the tariff ever has one)."""
     result: dict[str, Any] = {}
-    if kind == KIND_FIXED:
+    if kind in (KIND_FIXED, KIND_TIME_OF_USE):
         result["price_ct"] = float(values.get(CONF_PRICE) or 0)
+    if kind == KIND_TIME_OF_USE:
+        result["time_windows"] = [
+            {
+                "price_ct": float(item.get(KEY_PRICE) or 0),
+                "times": format_times(str(item.get(KEY_TIMES) or "")),
+                "days": list(item.get(KEY_DAYS, WEEKDAYS)),
+                "quarters": list(item.get(KEY_QUARTERS, ALL_QUARTERS)),
+            }
+            for item in values.get(CONF_TIME_WINDOWS) or []
+        ]
     if kind == KIND_DYNAMIC_MARKET:
         for key in (CONF_GRID_FEE, CONF_LEVIES, CONF_MARGIN):
             result[f"{key}_ct"] = float(values.get(key) or 0)
@@ -382,6 +497,15 @@ def price_now_attributes(data: Mapping[str, Any], moment: datetime) -> dict[str,
         attributes["bonus"] = items[-1]
         if len(items) > 1:
             attributes["bonuses"] = items
+    if kind == KIND_TIME_OF_USE:
+        # The window applying now (from 1), None: the price outside them.
+        source = price_from_data(
+            float(values.get(CONF_PRICE) or 0),
+            values.get(CONF_TIME_WINDOWS) or [],
+            BERLIN,
+        )
+        index = source.window_at(moment)
+        attributes["time_window"] = None if index is None else index + 1
     if kind != KIND_DYNAMIC_TOTAL:
         quarter = (local.month - 1) // 3 + 1
         quarters = {

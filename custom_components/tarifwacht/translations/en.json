@@ -130,7 +130,19 @@
           "menu_options": {
             "fixed": "Fixed price",
             "dynamic_total": "Dynamic: sensor with the total price (also your own tariff)",
-            "dynamic_market": "Dynamic: exchange price plus surcharges"
+            "dynamic_market": "Dynamic: exchange price plus surcharges",
+            "time_of_use_template": "Time-of-use tariff: fixed prices by time of day (e.g. Octopus Heat, HT/NT)"
+          }
+        },
+        "time_of_use_template": {
+          "title": "Time-of-use tariff",
+          "description": "Fixed energy prices that depend on the time of day. A template fills in the time windows of a known tariff; you enter the prices from your contract. Everything can be changed in the next step.",
+          "menu_options": {
+            "tou_octopus_heat": "Octopus Heat (low 02:00–06:00 and 12:00–16:00, high 18:00–21:00)",
+            "tou_octopus_go": "Octopus Go (cheap 00:00–05:00)",
+            "tou_enbw_sparzeit": "EnBW SparZeit (00:00–06:00 and 10:00–16:00)",
+            "tou_ht_nt": "Two-rate tariff HT/NT (HT Monday to Friday 06:00–21:00)",
+            "tou_custom": "Own time windows"
           }
         },
         "fixed": {
@@ -268,6 +280,112 @@
             }
           }
         },
+        "time_of_use": {
+          "title": "Time-of-use tariff",
+          "description": "Prices including VAT, as on your contract or offer. In each time window its own price applies, outside all windows the energy price.{template_hint}{edit_hint}",
+          "data": {
+            "name": "Name",
+            "price": "Energy price outside the time windows",
+            "base_price": "Base price",
+            "current": "My current tariff"
+          },
+          "data_description": {
+            "name": "For example the supplier. Used in entity names.",
+            "price": "Gross, in ct/kWh, e.g. the standard or the NT price.",
+            "base_price": "Optional, gross. Per month; per year under “More”. Booked pro rata per day.",
+            "current": "The other tariffs show their difference to this one."
+          },
+          "sections": {
+            "window_1": {
+              "name": "Time window 1",
+              "description": "Price and times of one price level. Several times with the same price separated by commas.",
+              "data": {
+                "window_price": "Energy price in the window",
+                "window_times": "Times",
+                "window_days": "Weekdays",
+                "window_quarters": "Quarters"
+              },
+              "data_description": {
+                "window_price": "Gross, in ct/kWh.",
+                "window_times": "Local time, quarter-hour grid, several separated by commas, e.g. 02:00-06:00, 12:00-16:00. A window may run past midnight (22:00-06:00); it then belongs to the day it starts on.",
+                "window_days": "Public holidays count like their weekday.",
+                "window_quarters": "Outside these quarters the energy price above applies."
+              }
+            },
+            "window_2": {
+              "name": "Time window 2 (optional)",
+              "description": "Another price level, or the same price on other weekdays.",
+              "data": {
+                "window_price": "Energy price in the window",
+                "window_times": "Times",
+                "window_days": "Weekdays",
+                "window_quarters": "Quarters"
+              },
+              "data_description": {
+                "window_price": "Gross, in ct/kWh.",
+                "window_times": "Local time, quarter-hour grid, several separated by commas, e.g. 02:00-06:00, 12:00-16:00. A window may run past midnight (22:00-06:00); it then belongs to the day it starts on.",
+                "window_days": "Public holidays count like their weekday.",
+                "window_quarters": "Outside these quarters the energy price above applies."
+              }
+            },
+            "window_3": {
+              "name": "Time window 3 (optional)",
+              "description": "Another price level, or the same price on other weekdays.",
+              "data": {
+                "window_price": "Energy price in the window",
+                "window_times": "Times",
+                "window_days": "Weekdays",
+                "window_quarters": "Quarters"
+              },
+              "data_description": {
+                "window_price": "Gross, in ct/kWh.",
+                "window_times": "Local time, quarter-hour grid, several separated by commas, e.g. 02:00-06:00, 12:00-16:00. A window may run past midnight (22:00-06:00); it then belongs to the day it starts on.",
+                "window_days": "Public holidays count like their weekday.",
+                "window_quarters": "Outside these quarters the energy price above applies."
+              }
+            },
+            "window_4": {
+              "name": "Time window 4 (optional)",
+              "description": "Another price level, or the same price on other weekdays.",
+              "data": {
+                "window_price": "Energy price in the window",
+                "window_times": "Times",
+                "window_days": "Weekdays",
+                "window_quarters": "Quarters"
+              },
+              "data_description": {
+                "window_price": "Gross, in ct/kWh.",
+                "window_times": "Local time, quarter-hour grid, several separated by commas, e.g. 02:00-06:00, 12:00-16:00. A window may run past midnight (22:00-06:00); it then belongs to the day it starts on.",
+                "window_days": "Public holidays count like their weekday.",
+                "window_quarters": "Outside these quarters the energy price above applies."
+              }
+            },
+            "details_section": {
+              "name": "More (optional)",
+              "description": "Base price per month or per year.",
+              "data": {
+                "base_period": "Base price per"
+              },
+              "data_description": {
+                "base_period": "Per year: the yearly price is spread over the 365 or 366 days."
+              }
+            },
+            "bonus_section": {
+              "name": "Bonus and credit (optional)",
+              "description": "A one-off credit of the offer, e.g. a new-customer or switching bonus, and a credit per year, e.g. Modul 1 under § 14a EnWG.",
+              "data": {
+                "bonus": "One-off bonus",
+                "bonus_date": "Bonus credited on",
+                "yearly_credit": "Credit per year"
+              },
+              "data_description": {
+                "bonus": "Gross, in €. Lowers the total cost of this tariff once, at midnight of the date (not the consumption cost). Empty: no bonus.",
+                "bonus_date": "Usually the start of the contract or the end of the first contract year.",
+                "yearly_credit": "Gross, in € per year, e.g. the flat grid fee reduction under § 14a EnWG (Modul 1) from your grid operator's price sheet. Deducted pro rata per day like the base price, so the costs may even fall below the base price. Empty: none."
+              }
+            }
+          }
+        },
         "reconfigure": {
           "title": "Change tariff",
           "description": "{summary}",
@@ -297,6 +415,70 @@
             "base_price": "Gross. Per month; per year under “More”."
           },
           "sections": {
+            "window_1": {
+              "name": "Time window 1",
+              "description": "Price and times of one price level. Several times with the same price separated by commas.",
+              "data": {
+                "window_price": "Energy price in the window",
+                "window_times": "Times",
+                "window_days": "Weekdays",
+                "window_quarters": "Quarters"
+              },
+              "data_description": {
+                "window_price": "Gross, in ct/kWh.",
+                "window_times": "Local time, quarter-hour grid, several separated by commas, e.g. 02:00-06:00, 12:00-16:00. A window may run past midnight (22:00-06:00); it then belongs to the day it starts on.",
+                "window_days": "Public holidays count like their weekday.",
+                "window_quarters": "Outside these quarters the energy price above applies."
+              }
+            },
+            "window_2": {
+              "name": "Time window 2 (optional)",
+              "description": "Another price level, or the same price on other weekdays.",
+              "data": {
+                "window_price": "Energy price in the window",
+                "window_times": "Times",
+                "window_days": "Weekdays",
+                "window_quarters": "Quarters"
+              },
+              "data_description": {
+                "window_price": "Gross, in ct/kWh.",
+                "window_times": "Local time, quarter-hour grid, several separated by commas, e.g. 02:00-06:00, 12:00-16:00. A window may run past midnight (22:00-06:00); it then belongs to the day it starts on.",
+                "window_days": "Public holidays count like their weekday.",
+                "window_quarters": "Outside these quarters the energy price above applies."
+              }
+            },
+            "window_3": {
+              "name": "Time window 3 (optional)",
+              "description": "Another price level, or the same price on other weekdays.",
+              "data": {
+                "window_price": "Energy price in the window",
+                "window_times": "Times",
+                "window_days": "Weekdays",
+                "window_quarters": "Quarters"
+              },
+              "data_description": {
+                "window_price": "Gross, in ct/kWh.",
+                "window_times": "Local time, quarter-hour grid, several separated by commas, e.g. 02:00-06:00, 12:00-16:00. A window may run past midnight (22:00-06:00); it then belongs to the day it starts on.",
+                "window_days": "Public holidays count like their weekday.",
+                "window_quarters": "Outside these quarters the energy price above applies."
+              }
+            },
+            "window_4": {
+              "name": "Time window 4 (optional)",
+              "description": "Another price level, or the same price on other weekdays.",
+              "data": {
+                "window_price": "Energy price in the window",
+                "window_times": "Times",
+                "window_days": "Weekdays",
+                "window_quarters": "Quarters"
+              },
+              "data_description": {
+                "window_price": "Gross, in ct/kWh.",
+                "window_times": "Local time, quarter-hour grid, several separated by commas, e.g. 02:00-06:00, 12:00-16:00. A window may run past midnight (22:00-06:00); it then belongs to the day it starts on.",
+                "window_days": "Public holidays count like their weekday.",
+                "window_quarters": "Outside these quarters the energy price above applies."
+              }
+            },
             "details_section": {
               "name": "More (optional)",
               "description": "VAT and whether the base price is per month or per year.",
@@ -314,7 +496,7 @@
               "description": "Time-variable grid fee (§ 14a EnWG) from this date on. Open when the tariff uses it today.",
               "data": {
                 "modul3_active": "Modul 3 active",
-                "standard_fee": "Grid fee contained in the fixed price",
+                "standard_fee": "Grid fee contained in the price",
                 "nt": "Grid fee low-load level (NT)",
                 "ht": "Grid fee high-load level (HT)",
                 "quarters": "Quarters in which the windows apply",
@@ -323,7 +505,7 @@
                 "vat": "VAT"
               },
               "data_description": {
-                "standard_fee": "ct/kWh net (without VAT): your grid operator's normal grid fee (energy rate) that is part of the fixed price, from its price sheet.",
+                "standard_fee": "ct/kWh net (without VAT): your grid operator's normal grid fee (energy rate) that is part of the fixed price or the time-of-use prices, from its price sheet.",
                 "nt_windows": "Local time, quarter-hour grid, several separated by commas, e.g. 10:00-14:00 or 01:45-06:15, 22:30-24:00. A window may run past midnight (23:00-06:00).",
                 "ht_windows": "As above, e.g. 17:00-22:00. Outside all windows the standard grid fee applies."
               }
@@ -392,6 +574,29 @@
             "nt_windows": "Local time, quarter-hour grid, several separated by commas, e.g. 10:00-14:00 or 01:45-06:15, 22:30-24:00. A window may run past midnight (23:00-06:00).",
             "ht_windows": "As above, e.g. 17:00-22:00. Outside all windows the standard grid fee applies."
           }
+        },
+        "modul3_time_of_use": {
+          "title": "Modul 3 ({tariff})",
+          "description": "With a controllable consumer (heat pump, wallbox) under § 14a EnWG Modul 3 the grid fee depends on the time of day. If your supplier passes it on, only the grid fee part of each price changes: in the low-load (NT) and high-load (HT) windows of the chosen quarters the price is the price of the time window (or the energy price outside them) + (grid fee of the window − grid fee contained) × (1 + VAT). Applies to the meter's whole grid purchase. Values from the start of the tariff; enter a new price sheet as a price change.",
+          "data": {
+            "modul3_active": "Modul 3 active",
+            "standard_fee": "Grid fee contained in the prices",
+            "vat": "VAT",
+            "nt": "Grid fee low-load level (NT)",
+            "ht": "Grid fee high-load level (HT)",
+            "quarters": "Quarters in which the windows apply",
+            "nt_windows": "Low-load windows (NT)",
+            "ht_windows": "High-load windows (HT)"
+          },
+          "data_description": {
+            "standard_fee": "ct/kWh net (without VAT): your grid operator's normal grid fee (energy rate) that is part of the prices, from its price sheet.",
+            "vat": "On the difference of the grid fee, in percent.",
+            "nt": "ct/kWh net (without VAT), from your grid operator's price sheet (Modul 3).",
+            "ht": "ct/kWh net (without VAT), from your grid operator's price sheet (Modul 3).",
+            "quarters": "Outside these quarters the standard grid fee applies all day.",
+            "nt_windows": "Local time, quarter-hour grid, several separated by commas, e.g. 10:00-14:00 or 01:45-06:15, 22:30-24:00. A window may run past midnight (23:00-06:00).",
+            "ht_windows": "As above, e.g. 17:00-22:00. Outside all windows the standard grid fee applies."
+          }
         }
       },
       "error": {
@@ -410,7 +615,15 @@
         "window_required": "Each level needs at least one window a day.",
         "quarters_required": "Please choose at least one quarter.",
         "bonus_date_required": "Please enter the date the bonus is credited on.",
-        "modul3_price_required": "Modul 3: please enter the grid fees of the low and high load level (for a fixed price also the grid fee contained in it)."
+        "modul3_price_required": "Modul 3: please enter the grid fees of the low and high load level (for a fixed price also the grid fee contained in it).",
+        "tou_window_required": "Please enter at least one time window with price and times. Without a time window, add a fixed price instead.",
+        "tou_price_required": "Please enter the energy price of this time window (0 is a price, too).",
+        "tou_times_required": "Please enter the times of this time window, e.g. 02:00-06:00.",
+        "tou_days_required": "Please choose at least one weekday.",
+        "tou_quarters_required": "Please choose at least one quarter.",
+        "tou_overlap": "This time window overlaps another one (or itself) on the same weekday: each quarter hour can have only one price.",
+        "tou_window_format": "Please enter times like 02:00-06:00, several separated by commas.",
+        "tou_window_grid": "Times must start and end on a quarter hour (:00, :15, :30, :45)."
       }
     },
     "solar": {
@@ -720,6 +933,17 @@
         "2": "Q2 (Apr–Jun)",
         "3": "Q3 (Jul–Sep)",
         "4": "Q4 (Oct–Dec)"
+      }
+    },
+    "weekdays": {
+      "options": {
+        "0": "Monday",
+        "1": "Tuesday",
+        "2": "Wednesday",
+        "3": "Thursday",
+        "4": "Friday",
+        "5": "Saturday",
+        "6": "Sunday"
       }
     }
   },

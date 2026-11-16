@@ -36,10 +36,13 @@ from .const import (
     CONF_NAME,
     CONF_PRICE,
     CONF_PRICE_ENTITY,
+    CONF_TIME_WINDOWS,
     CONF_VAT,
     KIND_DYNAMIC_MARKET,
     KIND_DYNAMIC_TOTAL,
     KIND_FIXED,
+    KIND_TIME_OF_USE,
+    KINDS_WITHOUT_SENSOR,
     TARIFF_DYNAMIC,
     TARIFF_FIXED,
 )
@@ -51,7 +54,9 @@ from .tariffs import (
     FixedWithGridFee,
     PriceSource,
     Tariff,
+    WithGridFee,
 )
+from .time_of_use import price_from_data
 
 # Modul 3 of a fixed price: the standard grid fee contained in the price
 # (ct/kWh net) and the VAT on the difference (percent), kept with the windows.
@@ -66,7 +71,9 @@ def tariff_key(subentry_id: str, data: Mapping[str, Any]) -> str:
 
 def price_entity(data: Mapping[str, Any]) -> str | None:
     """The price sensor a tariff reads, None for a fixed price."""
-    return data.get(CONF_PRICE_ENTITY) if data[CONF_KIND] != KIND_FIXED else None
+    if data[CONF_KIND] in KINDS_WITHOUT_SENSOR:
+        return None
+    return data.get(CONF_PRICE_ENTITY)
 
 
 def surcharge_ct(data: Mapping[str, Any]) -> float:
@@ -81,6 +88,8 @@ def change_fields(kind: str) -> tuple[str, ...]:
     base = (CONF_BASE_PRICE, CONF_BASE_PERIOD)
     if kind == KIND_FIXED:
         return (CONF_PRICE, CONF_MODUL3, *base)
+    if kind == KIND_TIME_OF_USE:
+        return (CONF_PRICE, CONF_TIME_WINDOWS, CONF_MODUL3, *base)
     if kind == KIND_DYNAMIC_MARKET:
         return (CONF_GRID_FEE, CONF_LEVIES, CONF_MARGIN, CONF_VAT, CONF_MODUL3, *base)
     return base
@@ -213,21 +222,29 @@ def _single_tariff(
     """One price state; the callables return the prices of a price sensor."""
     kind = data[CONF_KIND]
     prices: PriceSource
-    if kind == KIND_FIXED:
+    if kind in KINDS_WITHOUT_SENSOR:
         modul3_data = data.get(CONF_MODUL3) or {}
         standard = float(modul3_data.get(MODUL3_STANDARD) or 0)
         modul3 = modul3_from_data(modul3_data, standard, BERLIN)
-        price = float(data[CONF_PRICE]) / 100
-        prices = (
-            FixedPrice(price)
-            if modul3 is None
-            else FixedWithGridFee(
-                price,
-                modul3.standard,
-                float(modul3_data.get(MODUL3_VAT) or 0) / 100,
-                modul3.fee,
+        vat = float(modul3_data.get(MODUL3_VAT) or 0) / 100
+        if kind == KIND_TIME_OF_USE:
+            windows = price_from_data(
+                float(data.get(CONF_PRICE) or 0),
+                data.get(CONF_TIME_WINDOWS) or [],
+                BERLIN,
             )
-        )
+            prices = (
+                windows
+                if modul3 is None
+                else WithGridFee(windows, modul3.standard, vat, modul3.fee)
+            )
+        else:
+            price = float(data[CONF_PRICE]) / 100
+            prices = (
+                FixedPrice(price)
+                if modul3 is None
+                else FixedWithGridFee(price, modul3.standard, vat, modul3.fee)
+            )
     elif kind == KIND_DYNAMIC_TOTAL:
         prices = price_table(data[CONF_PRICE_ENTITY])
     elif kind == KIND_DYNAMIC_MARKET:

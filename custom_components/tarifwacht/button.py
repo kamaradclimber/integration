@@ -43,10 +43,11 @@ from .const import (
     CONF_MODUL3,
     CONF_PRICE,
     CONF_SMARD_FILL,
+    CONF_TIME_WINDOWS,
     CONF_VAT,
     DOMAIN,
     KIND_DYNAMIC_MARKET,
-    KIND_FIXED,
+    KINDS_WITHOUT_SENSOR,
     VERSION,
 )
 from .entity import MeterEntity
@@ -58,6 +59,7 @@ from .runtime import MeterRuntime, has_battery, tariff_subentries
 from .smard_cache import DATA_SMARD, SmardError
 from .statistics_import import StatisticsImportError, async_recalculate
 from .tariff_config import MODUL3_STANDARD, MODUL3_VAT, price_entity, tariff_key
+from .time_of_use import KEY_DAYS, KEY_PRICE, KEY_QUARTERS, KEY_TIMES, windows_error
 
 NAME = "Tarifwacht"
 METER_ROLE = "meter"
@@ -261,6 +263,21 @@ def _windows(text: Any) -> str:
     )
 
 
+def _time_windows(items: Any) -> str:
+    """Time windows of a time-of-use tariff: price, times as parsed, weekdays
+    (0 = Monday) and quarters; whether they would pass the form's check."""
+    items = list(items or [])
+    parts = [
+        f"{_num(item.get(KEY_PRICE))} ct {_windows(item.get(KEY_TIMES))}"
+        f" days {','.join(str(d) for d in item.get(KEY_DAYS, []))}"
+        f" quarters {','.join(str(q) for q in item.get(KEY_QUARTERS, []))}"
+        for item in items
+    ]
+    error = windows_error(items) if items else (1, "none")
+    check = "ok" if error is None else f"window {error[0]} {error[1]}"
+    return "; ".join(parts) + f" ({check})" if parts else f"none ({check})"
+
+
 def _modul3(data: Mapping[str, Any]) -> str:
     if not data.get("active"):
         return "off"
@@ -303,11 +320,17 @@ def tariff_settings(tariffs: Sequence[Mapping[str, Any]]) -> Lines:
                 f"SMARD.de fill {'on' if data.get(CONF_SMARD_FILL) else 'off'}"
             )
         lines.append((label, ", ".join(parts)))
+        if CONF_TIME_WINDOWS in data:
+            lines.append(
+                (f"{label} time windows", _time_windows(data[CONF_TIME_WINDOWS]))
+            )
         if modul3 := data.get(CONF_MODUL3):
             lines.append((f"{label} modul 3", _modul3(modul3)))
         changes = sorted(data.get(CONF_CHANGES) or [], key=lambda c: c[CONF_FROM])
         for change in changes:
             parts = _prices(change)
+            if CONF_TIME_WINDOWS in change:
+                parts.append(f"time windows {_time_windows(change[CONF_TIME_WINDOWS])}")
             if CONF_MODUL3 in change:
                 parts.append(f"modul 3 {_modul3(change[CONF_MODUL3] or {})}")
             if change.get(CONF_BONUS):
@@ -400,7 +423,7 @@ def entry_lines(
                 parts.append(f"unit not supported ({runtime.wrong_price_unit[entity]})")
             if (until := engine.unpriced_until(entity)) is not None:
                 parts.append(f"no prices before {_time(until)}")
-        elif subentry.data.get(CONF_KIND) != KIND_FIXED:
+        elif subentry.data.get(CONF_KIND) not in KINDS_WITHOUT_SENSOR:
             parts.append("no price sensor")
         if totals := engine.totals.get(tariff_key(subentry.subentry_id, subentry.data)):
             parts.append(f"{len(totals.pending)} quarter hours waiting for a price")

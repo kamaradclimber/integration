@@ -1,5 +1,11 @@
 # Changelog
 
+## Unveröffentlicht
+
+### Neu
+
+- **Zeitfenster-Tarif: feste Preise je Uhrzeit.** Neue Tarifart unter *Tarif hinzufügen* für Tarife wie Octopus Heat, Octopus Go, EnBW SparZeit oder einen Zweitarif mit HT und NT: ein Arbeitspreis außerhalb der Zeitfenster und bis zu vier Zeitfenster mit eigenem Preis, Uhrzeiten, Wochentagen und Quartalen. Vorlagen tragen die Zeitfenster bekannter Tarife ein, die Preise kommen aus deinem Vertrag. Rechnet wie der Festpreis auch rückwirkend, mit Preisänderungen, Bonus und auf Wunsch Modul 3; „Arbeitspreis jetzt“ zeigt im Attribut `time_window`, welches Zeitfenster gerade gilt. Feiertage zählen wie ihr Wochentag. Siehe README, „Zeitfenster-Tarif“. (danke an greteOne, simon42-Forum)
+
 ## 0.4.1 – 2026-11-16
 
 ### Geändert

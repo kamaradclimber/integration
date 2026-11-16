@@ -91,7 +91,16 @@ PURCHASE_KEYS: Final = (
 KIND_FIXED: Final = "fixed"
 KIND_DYNAMIC_TOTAL: Final = "dynamic_total"
 KIND_DYNAMIC_MARKET: Final = "dynamic_market"
-KINDS: Final = (KIND_FIXED, KIND_DYNAMIC_TOTAL, KIND_DYNAMIC_MARKET)
+# Fixed prices per time of day (time_of_use.py): the standard price in
+# CONF_PRICE, the time windows in CONF_TIME_WINDOWS.
+KIND_TIME_OF_USE: Final = "time_of_use"
+KINDS: Final = (KIND_FIXED, KIND_DYNAMIC_TOTAL, KIND_DYNAMIC_MARKET, KIND_TIME_OF_USE)
+# Kinds without a price sensor: their prices are known for every quarter
+# hour, also before the setup.
+KINDS_WITHOUT_SENSOR: Final = (KIND_FIXED, KIND_TIME_OF_USE)
+# Time windows of a time-of-use tariff: [{"price": ct/kWh incl. VAT,
+# "times": "02:00-06:00, 12:00-16:00", "days": [0..6], "quarters": [1..4]}].
+CONF_TIME_WINDOWS: Final = "time_windows"
 
 # Keys of the two tariffs of version 0.1.0b1, kept for its entities.
 TARIFF_FIXED: Final = "fixed"

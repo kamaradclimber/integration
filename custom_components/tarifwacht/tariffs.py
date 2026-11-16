@@ -70,6 +70,24 @@ class FixedWithGridFee:
         return self.price + (self.grid_fee(slot) - self.standard) * (1 + self.vat)
 
 
+@dataclass(frozen=True)
+class WithGridFee:
+    """Like FixedWithGridFee for prices that depend on the time of day
+    (time-of-use tariff): the price of the quarter hour + (grid fee of the
+    quarter hour - standard grid fee) * (1 + vat)."""
+
+    prices: PriceSource
+    standard: float
+    vat: float
+    grid_fee: Callable[[datetime], float]
+
+    def get(self, slot: datetime) -> float | None:
+        price = self.prices.get(slot)
+        if price is None:
+            return None
+        return price + (self.grid_fee(slot) - self.standard) * (1 + self.vat)
+
+
 class BasePeriod(StrEnum):
     """What a base price is quoted for."""
 

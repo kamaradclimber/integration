@@ -1093,3 +1093,178 @@ async def test_unavailable_price_sensor(hass: HomeAssistant) -> None:
         },
     )
     assert result["errors"] == {"price_entity": "price_unavailable"}
+
+
+# --- time-of-use tariff ----------------------------------------------------------
+
+
+def section_values(result: dict, name: str) -> dict:
+    """The suggested values of one section of the shown form."""
+    schema = result["data_schema"].schema
+    (key,) = [k for k in schema if str(k) == name]
+    return {
+        str(inner): (inner.description or {}).get("suggested_value")
+        for inner in schema[key].schema.schema
+    }
+
+
+async def test_add_time_of_use_tariff_from_a_template(hass: HomeAssistant) -> None:
+    entry = added_entry(hass)
+    result = await start_tariff(hass, entry, "time_of_use_template")
+    assert result["type"] is FlowResultType.MENU
+    assert result["menu_options"] == [
+        "tou_octopus_heat",
+        "tou_octopus_go",
+        "tou_enbw_sparzeit",
+        "tou_ht_nt",
+        "tou_custom",
+    ]
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "tou_octopus_heat"}
+    )
+    assert result["step_id"] == "time_of_use"
+    assert shown_values(result)["name"] == "Octopus Heat"
+    assert section_values(result, "window_1")["window_times"] == (
+        "02:00-06:00, 12:00-16:00"
+    )
+    assert section_values(result, "window_2")["window_times"] == "18:00-21:00"
+    assert section_values(result, "window_3")["window_days"] == [
+        str(d) for d in range(7)
+    ]
+    assert "Octopus Heat" in result["description_placeholders"]["template_hint"]
+    days = [str(d) for d in range(7)]
+    quarters = ["1", "2", "3", "4"]
+    form = {
+        "name": "Octopus Heat",
+        "price": 30.0,
+        "base_period": "month",
+        "current": False,
+        "window_1": {
+            "window_price": 20.0,
+            "window_times": "02:00-06:00, 12:00-16:00",
+            "window_days": days,
+            "window_quarters": quarters,
+        },
+        "window_2": {
+            "window_times": "18:00-21:00",
+            "window_days": days,
+            "window_quarters": quarters,
+        },
+        "window_3": {"window_days": days, "window_quarters": quarters},
+    }
+    # The high price is missing: the error stands at its window.
+    result = await configure_tariff(hass, result, form)
+    assert result["errors"] == {"window_2": "tou_price_required"}
+    form["window_2"]["window_price"] = 40.0
+    result = await configure_tariff(hass, result, form)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    added = next(s for s in entry.subentries.values() if s.title == "Octopus Heat")
+    assert dict(added.data) == {
+        "kind": "time_of_use",
+        "price": 30.0,
+        "time_windows": [
+            {
+                "price": 20.0,
+                "times": "02:00-06:00, 12:00-16:00",
+                "days": list(range(7)),
+                "quarters": [1, 2, 3, 4],
+            },
+            {
+                "price": 40.0,
+                "times": "18:00-21:00",
+                "days": list(range(7)),
+                "quarters": [1, 2, 3, 4],
+            },
+        ],
+        "base_price": 0,
+        "base_period": "month",
+        "current": False,
+    }
+
+    # Change: the menu offers Modul 3; editing shows the stored windows,
+    # two sections open; a price change is prefilled with them.
+    result = await entry.start_subentry_reconfigure_flow(hass, added.subentry_id)
+    assert result["menu_options"] == ["edit", "modul3", "add_change"]
+    assert "Zeitfenster-Tarif" not in result["description_placeholders"]["summary"]
+    assert "Time-of-use tariff" in result["description_placeholders"]["summary"]
+    edit = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "edit"}
+    )
+    assert edit["step_id"] == "time_of_use"
+    assert section_values(edit, "window_2")["window_price"] == 40.0
+    schema = edit["data_schema"].schema
+    collapsed = {
+        str(k): schema[k].options["collapsed"]
+        for k in schema
+        if str(k).startswith("window_")
+    }
+    assert collapsed == {
+        "window_1": False,
+        "window_2": False,
+        "window_3": True,
+        "window_4": True,
+    }
+
+    result = await entry.start_subentry_reconfigure_flow(hass, added.subentry_id)
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "add_change"}
+    )
+    assert section_values(result, "window_1")["window_price"] == 20.0
+    change = {
+        "from": "2027-01-01",
+        "price": 32.0,
+        "base_period": "month",
+        "window_1": {**form["window_1"], "window_price": 21.0},
+        "window_2": form["window_2"],
+    }
+    result = await configure_tariff(hass, result, change)
+    assert result["type"] is FlowResultType.ABORT
+    (stored,) = entry.subentries[added.subentry_id].data["changes"]
+    assert stored["price"] == 32.0
+    assert [w["price"] for w in stored["time_windows"]] == [21.0, 40.0]
+
+    # Modul 3 on top, like a fixed price: with the grid fee contained.
+    result = await entry.start_subentry_reconfigure_flow(hass, added.subentry_id)
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "modul3"}
+    )
+    assert result["step_id"] == "modul3_time_of_use"
+    result = await configure_tariff(
+        hass,
+        result,
+        {
+            "modul3_active": True,
+            "standard_fee": 8.0,
+            "vat": 19.0,
+            "nt": 3.0,
+            "ht": 13.0,
+            "quarters": ["1", "2", "3", "4"],
+            "nt_windows": "00:00-06:00",
+            "ht_windows": "17:00-20:00",
+        },
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert entry.subentries[added.subentry_id].data["modul3"]["standard"] == 8.0
+
+
+async def test_time_of_use_needs_a_window(hass: HomeAssistant) -> None:
+    entry = added_entry(hass)
+    result = await start_tariff(hass, entry, "time_of_use_template")
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {"next_step_id": "tou_custom"}
+    )
+    assert shown_values(result)["name"] is None
+    assert result["description_placeholders"]["template_hint"] == ""
+    base = {"name": "Eigener", "price": 30.0, "base_period": "month", "current": False}
+    result = await configure_tariff(hass, result, base)
+    assert result["errors"] == {"window_1": "tou_window_required"}
+    result = await configure_tariff(
+        hass,
+        result,
+        {
+            **base,
+            "window_1": {"window_price": 20.0, "window_times": "02:00-06:00"},
+            "window_2": {"window_price": 10.0, "window_times": "05:00-07:00"},
+        },
+    )
+    assert result["errors"] == {"window_2": "tou_overlap"}
