@@ -1,11 +1,12 @@
 # Changelog
 
-## Unveröffentlicht
+## 0.4.1 – 2026-11-16
 
 ### Geändert
 
-- **Demo zeigt „Speicher simulieren“.** Beim Haus steht unter dem Jahresrückblick, was ein Speicher mit 5, 10 und 15 kWh in einem Jahr mit jedem Tarif gespart hätte, wie viele Vollzyklen er gemacht hätte und bis zu welchem Kaufpreis er sich bezahlt macht – daneben die Ersparnis des vorhandenen Speichers und die ganze Antwort der Aktion. Gerechnet vom Code der Integration, mit erfundenen Daten.
+- **Demo zeigt „Speicher simulieren“.** Beim Haus steht unter dem Jahresrückblick, was ein Speicher mit 5, 10 und 15 kWh in einem Jahr mit jedem Tarif gespart hätte, wie viele Vollzyklen er gemacht hätte und bis zu welchem Kaufpreis er sich bezahlt macht – daneben die Ersparnis des vorhandenen Speichers und die ganze Antwort der Aktion. Gerechnet vom Code der Integration, mit erfundenen Daten. Auf dem Handy passen die Tabellen jetzt in ihre Karte.
 - **Hinweis zum Melden bei „Sensor mit Gesamtpreis“.** Der Schritt sagt jetzt, wohin man sich wenden kann, wenn die eigene Preisquelle nicht erkannt wird oder falsch rechnet.
+- **README auf Englisch vollständig.** Dort fehlten die Vorschläge für Zähler und Preissensor beim Einrichten und der Haken „Zeit seit der Einrichtung mit Börsenpreisen von SMARD.de nachtragen“.
 
 ## 0.4.0 – 2026-11-15
 

@@ -153,6 +153,11 @@
       table.year th:first-child, table.year td:first-child { text-align: left; }
       table.year th { font-weight: 500; color: var(--secondary-text-color); }
       table.year tr.split td { border-top: 2px solid var(--divider-color); }
+      /* Narrow screens: tighter cells, and the table scrolls inside its card instead of being cut off. */
+      @media (max-width: 600px) {
+        table.year { display: block; overflow-x: auto; }
+        table.year th, table.year td { padding: 6px 8px; }
+      }
 
       /* The three cases of "PV und Speicher" */
       .cases { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center;
