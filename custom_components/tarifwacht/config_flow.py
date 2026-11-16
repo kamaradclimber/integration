@@ -1213,23 +1213,25 @@ class TariffSubentryFlow(ConfigSubentryFlow):
                 )
             ):
                 suggested[CONF_PRICE_ENTITY] = price
+        # Editing shows the values from the start: say so, and where a later
+        # price goes.
+        placeholders = {
+            "edit_hint": edit_hint(self._german) if subentry is not None else "",
+            # Where to report a price source not recognised.
+            "issues_url": ISSUES_URL,
+        }
+        if kind == KIND_TIME_OF_USE:
+            # Which window of a template is which price level.
+            placeholders["template_hint"] = (
+                template_hint(self._template, self._german) if subentry is None else ""
+            )
         return self.async_show_form(
             step_id=kind,
             data_schema=self.add_suggested_values_to_schema(
                 _tariff_schema(kind, open_windows=open_windows), suggested
             ),
             errors=errors,
-            # Editing shows the values from the start: say so, and where a
-            # later price goes.
-            description_placeholders={
-                "edit_hint": edit_hint(self._german) if subentry is not None else "",
-                # Which window of a template is which price level.
-                "template_hint": template_hint(self._template, self._german)
-                if subentry is None
-                else "",
-                # Where to report a price source not recognised.
-                "issues_url": ISSUES_URL,
-            },
+            description_placeholders=placeholders,
         )
 
     def _clear_current(self, entry: ConfigEntry, keep: Any) -> None:
