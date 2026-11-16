@@ -50,10 +50,11 @@ from homeassistant.components.recorder.statistics import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
-from .const import DOMAIN
+from .const import DOMAIN, SIGNAL_STATISTICS_WRITTEN
 from .lookback import (
     FIVE_MINUTES,
     HOUR,
@@ -228,9 +229,18 @@ async def async_import_history(
         raise StatisticsImportError("busy")
     async with lock:
         result = await _async_import_history(hass, entry, first_day)
+        await _async_written(hass, entry)
     # The payback of PV and battery counts the imported days too.
     entry.runtime_data.async_reload_payback()
     return result
+
+
+async def _async_written(hass: HomeAssistant, entry: TarifwachtConfigEntry) -> None:
+    """Once the recorder has written the imported rows, tell the cards: they
+    ask for the statistics again at once instead of after up to 30 minutes
+    (the months; simon42 94979 #30)."""
+    await get_instance(hass).async_block_till_done()
+    async_dispatcher_send(hass, SIGNAL_STATISTICS_WRITTEN, entry.entry_id)
 
 
 async def _async_import_history(
@@ -517,6 +527,7 @@ async def async_recalculate(
         raise StatisticsImportError("busy")
     async with lock:
         result, up_to_date = await _async_recalculate(hass, entry, first_day)
+        await _async_written(hass, entry)
     if up_to_date:
         async_clear_outdated(hass, entry.entry_id)
     entry.runtime_data.async_reload_payback()

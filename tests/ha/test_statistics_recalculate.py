@@ -188,9 +188,17 @@ async def test_recalculate_after_a_tariff_change(
     assert jump > 0.19
 
     energy_before = await rows(hass, energy, "hour")
+    from homeassistant.helpers.dispatcher import async_dispatcher_connect
+
+    from custom_components.tarifwacht.const import SIGNAL_STATISTICS_WRITTEN
+
+    heard: list[str] = []
+    async_dispatcher_connect(hass, SIGNAL_STATISTICS_WRITTEN, heard.append)
     title, message = await press(hass, entry)
     assert title == "Tarifwacht: statistics recalculated"
     assert "recalculated with the current tariffs" in message
+    # The cards hear of it once the rows are written.
+    assert heard == [entry.entry_id]
     hours = await rows(hass, cost, "hour")
     assert hours[-1] == (
         utc(2026, 10, 25, 16),

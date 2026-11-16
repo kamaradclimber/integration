@@ -108,6 +108,10 @@ TARIFF_DYNAMIC: Final = "dynamic"
 
 DEFAULT_VAT: Final = 19.0
 
+# Dispatched with the entry id once imported or recalculated statistics
+# are written: the card asks for them again at once (cards.py).
+SIGNAL_STATISTICS_WRITTEN: Final = f"{DOMAIN}_statistics_written"
+
 # Units a price sensor may report; prices are used as they are, so only
 # EUR/kWh (verified with EPEX Spot, see tests/fixtures) is accepted.
 PRICE_UNITS: Final = ("€/kWh", "EUR/kWh")

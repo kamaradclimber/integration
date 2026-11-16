@@ -17,8 +17,9 @@
  * of the cumulative sensors in the long-term statistics, as the statistic
  * card shows them (calendar periods in the server's time zone); the monthly
  * bars come from the monthly statistics. Statistics are asked again after
- * each five-minute compile, shared by all cards on the page and not while
- * the page is hidden.
+ * each five-minute compile (the months every 30 minutes) and at once when
+ * the integration has imported or recalculated statistics, shared by all
+ * cards on the page and not while the page is hidden.
  */
 
 // The integration loads the file with "?v=<version>" (cards.py).
@@ -212,8 +213,24 @@ function store(hass) {
   if (!found) {
     found = { info: new Map(), stats: new Map(), months: new Map() };
     STORES.set(key, found);
+    // After "Import statistics" or "Recalculate statistics" the integration
+    // says so once the recorder has written: ask again at once, not after up
+    // to 30 minutes. No message, no query (the demo has no subscriptions).
+    if (typeof hass.connection?.subscribeMessage === "function") {
+      hass.connection
+        .subscribeMessage(() => statisticsWritten(found), { type: `${DOMAIN}/subscribe_statistics` })
+        .catch(() => {});
+    }
   }
   return found;
+}
+
+/** Statistics were written: every period and month is due now. */
+function statisticsWritten(found) {
+  for (const map of [found.stats, found.months]) {
+    for (const [key, known] of map) map.set(key, { ...known, due: 0 });
+  }
+  for (const card of CARDS) card._fetch();
 }
 
 const CARDS = new Set();

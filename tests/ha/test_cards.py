@@ -109,3 +109,24 @@ async def test_card_file_is_served(hass: HomeAssistant, hass_client) -> None:
     assert response.status == 200
     text = await response.text()
     assert "tarifwacht-card-editor" in text
+
+
+async def test_card_hears_when_statistics_are_written(
+    hass: HomeAssistant, hass_ws_client
+) -> None:
+    """After an import or a recalculation the card asks again at once."""
+    from homeassistant.helpers.dispatcher import async_dispatcher_send
+
+    from custom_components.tarifwacht.const import SIGNAL_STATISTICS_WRITTEN
+
+    assert await async_setup_component(hass, "websocket_api", {})
+    await setup(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "tarifwacht/subscribe_statistics"})
+    reply = await client.receive_json()
+    assert reply["success"]
+    async_dispatcher_send(hass, SIGNAL_STATISTICS_WRITTEN, "abc")
+    event = await client.receive_json()
+    assert event["id"] == 1
+    assert event["type"] == "event"
+    assert event["event"] == {"entry_id": "abc"}

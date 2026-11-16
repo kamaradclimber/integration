@@ -11,7 +11,8 @@ command "tarifwacht/tariffs" hands it out. Entity ids are looked up in the
 entity registry by unique id when the card asks, so renamed entities need no
 change in the card; they stay out of the state attributes (and the recorder).
 The card reads the values per day, month and year from the long-term
-statistics itself.
+statistics itself; "tarifwacht/subscribe_statistics" tells it when an import
+or a recalculation has written them, so it asks again at once.
 """
 
 from __future__ import annotations
@@ -24,8 +25,9 @@ from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
-from .const import DOMAIN, VERSION
+from .const import DOMAIN, SIGNAL_STATISTICS_WRITTEN, VERSION
 from .runtime import has_battery
 
 if TYPE_CHECKING:
@@ -51,6 +53,7 @@ async def async_setup_cards(hass: HomeAssistant) -> None:
     (tests) only the command. The frontend learns of the card per entry
     (frontend_resource.async_register_card)."""
     websocket_api.async_register_command(hass, ws_tariffs)
+    websocket_api.async_register_command(hass, ws_subscribe_statistics)
     if getattr(hass, "http", None) is None:
         return
     from homeassistant.components.http import StaticPathConfig
@@ -127,3 +130,25 @@ def ws_tariffs(
         connection.send_error(msg["id"], "not_found", "No Tarifwacht entry")
         return
     connection.send_result(msg["id"], info)
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/subscribe_statistics"}
+)
+@callback
+def ws_subscribe_statistics(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+) -> None:
+    """An event with the entry id whenever imported or recalculated
+    statistics are written; nothing in between (no polling, no writes)."""
+
+    @callback
+    def written(entry_id: str) -> None:
+        connection.send_message(
+            websocket_api.event_message(msg["id"], {"entry_id": entry_id})
+        )
+
+    connection.subscriptions[msg["id"]] = async_dispatcher_connect(
+        hass, SIGNAL_STATISTICS_WRITTEN, written
+    )
+    connection.send_result(msg["id"])
