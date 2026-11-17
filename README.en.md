@@ -81,8 +81,6 @@ Or by hand:
 1. *Settings → Marketplace → Browse*, search for Tarifwacht and install it (before Home Assistant 2026.11: search for it in HACS and download it). Restart Home Assistant.
 2. *Settings → Devices & services → Add integration → Tarifwacht*.
 
-Note: the old HACS dashboard (before Home Assistant 2026.11) does not show the icon ([HACS issue #5171](https://github.com/hacs/integration/issues/5171)); the Marketplace and the settings do.
-
 ## Setup
 
 1. **Grid import meter:** name (e.g. "Home") and meter. If a grid import is set up in the energy dashboard, that meter is already in the field. A further entry is only meant for a further meter: further tariffs for the same meter go to the existing entry under *Add tariff*, and the form then says so too.

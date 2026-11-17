@@ -79,8 +79,6 @@ Oder von Hand:
 1. *Einstellungen → Marketplace → Durchstöbern*, nach Tarifwacht suchen und installieren (vor Home Assistant 2026.11: in HACS suchen und herunterladen). Home Assistant neu starten.
 2. *Einstellungen → Geräte & Dienste → Integration hinzufügen → Tarifwacht*.
 
-Hinweis: Im alten HACS-Dashboard (vor Home Assistant 2026.11) fehlt das Icon ([HACS-Issue #5171](https://github.com/hacs/integration/issues/5171)); im Marketplace und in den Einstellungen wird es angezeigt.
-
 ## Einrichtung
 
 1. **Bezugszähler:** Name (z. B. „Haus“) und Zähler. Ist im Energie-Dashboard ein Netzbezug eingetragen, steht dieser Zähler schon im Feld. Ein weiterer Eintrag ist nur für einen weiteren Zähler gedacht: Weitere Tarife für denselben Zähler kommen unter *Tarif hinzufügen* an den bestehenden Eintrag, das Formular sagt das dann auch.
