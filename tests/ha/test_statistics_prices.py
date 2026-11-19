@@ -10,8 +10,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.components.recorder import Recorder, get_instance
 from homeassistant.components.recorder.models import StatisticMeanType
 from homeassistant.components.recorder.models.statistics import StatisticMetaData
@@ -24,9 +26,21 @@ from pytest_homeassistant_custom_component.components.recorder.common import (
     async_wait_recording_done,
 )
 
+from custom_components.tarifwacht.diagnostics import (
+    async_get_config_entry_diagnostics,
+)
+from custom_components.tarifwacht.runtime import MeterRuntime
+
 from .conftest import PRICE
-from .test_init import START
-from .test_lookback import compare, import_meter_statistics, setup_entry
+from .test_init import START, two_kwh, value
+from .test_lookback import (
+    NEW_TOTAL,
+    PRICE_UNIT,
+    add_tariff,
+    compare,
+    import_meter_statistics,
+    setup_entry,
+)
 from .test_statistics_import import (
     LIVE_HOUR,
     entity_id,
@@ -169,3 +183,52 @@ async def test_import_statistics_prices(hass: HomeAssistant) -> None:
     assert sums[datetime(2026, 10, 24, 13, tzinfo=UTC)] == pytest.approx(0.20)
     assert sums[datetime(2026, 10, 24, 15, tzinfo=UTC)] == pytest.approx(1.05)
     assert sums[LIVE_HOUR] == pytest.approx(0.5 + 1.05)
+
+
+@pytest.mark.freeze_time(START)
+async def test_added_total_price_tariff_gets_statistics_prices_once(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory
+) -> None:
+    """A total-price tariff added later: the quarter hour since the setup
+    before the sensor's first price comes from the sensor's hourly
+    statistics (the recorder has no state of it there). The price goes into
+    the price table, so it is stored: after a restart the cost is the same
+    before any background work, and nothing is left to fill."""
+    entry = await setup_entry(hass, market=False)
+    await two_kwh(hass, freezer)
+    # The new sensor is read from 16:15 UTC on (its first state is 16:29:30).
+    hass.states.async_set(NEW_TOTAL, "0.05", PRICE_UNIT)
+    metadata: dict[str, Any] = {
+        "has_sum": False,
+        "mean_type": StatisticMeanType.ARITHMETIC,
+        "name": None,
+        "source": "recorder",
+        "statistic_id": NEW_TOTAL,
+        "unit_of_measurement": "€/kWh",
+    }
+    if "unit_class" in StatisticMetaData.__annotations__:
+        metadata["unit_class"] = None
+    # The hour of the setup (16:00 UTC): its row starts before the setup
+    # (16:00:30) and must count.
+    async_import_statistics(
+        hass,
+        metadata,  # type: ignore[arg-type]
+        [{"start": datetime(2026, 10, 25, 16, tzinfo=UTC), "mean": 0.25}],
+    )
+    await async_wait_recording_done(hass)
+
+    key = await add_tariff(
+        hass, entry, "dynamic_total", {"name": "Gesamt", "price_entity": NEW_TOTAL}
+    )
+    # 16:00 from the statistics, 16:15 the live price (the mean does not
+    # replace it).
+    expected = (1 + 1 / 30) * 0.25 + 29 / 30 * 0.05
+    assert value(hass, entry, f"{key}_consumption_cost") == pytest.approx(expected)
+    diagnostics = await async_get_config_entry_diagnostics(hass, entry)
+    assert diagnostics["unpriced_until"] == {}
+
+    # Stored: the same after a restart without the background fill.
+    with patch.object(MeterRuntime, "_async_fill_past_prices", AsyncMock()):
+        assert await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done(wait_background_tasks=True)
+    assert value(hass, entry, f"{key}_consumption_cost") == pytest.approx(expected)

@@ -546,21 +546,33 @@ class MeterRuntime:
 
         A tariff added later, or given another price sensor, would otherwise
         leave that time out of every comparison. Total-price sensors are read
-        from their long-term statistics (local, always) and from their
-        recorded states (local); exchange prices only for tariffs whose user
-        agreed to it in the tariff's form (SMARD.de). Runs in the background;
-        what fails or cannot be found stays without a price, and the next
-        start tries again.
+        from their recorded states (local, exact per quarter hour) and, for
+        what the recorder no longer holds, from their long-term statistics
+        (local, hourly means); exchange prices only for tariffs whose user
+        agreed to it in the tariff's form (SMARD.de). Both total-price sources
+        go into the price table like live prices: stored, so the gap is
+        closed once and no start reads or recomputes it again. Runs in the
+        background; what fails or cannot be found stays without a price, and
+        the next start tries again.
         """
         engine = self.engine
         started = engine.started
-        stats = await self._async_price_statistics(started) if started else {}
-        if stats:
-            engine.tariffs = self._build_tariffs(stats=stats)
+        gaps = {
+            entity: until
+            for entity in sorted(self._total_price_entities())
+            if (until := engine.unpriced_until(entity)) is not None
+        }
+        stats = await self._async_price_statistics(started) if started and gaps else {}
         added = False
-        for entity in sorted(self._total_price_entities()):
-            if (until := engine.unpriced_until(entity)) is not None:
-                added |= await self._async_recorded_prices(entity, until)
+        for entity, until in gaps.items():
+            added |= await self._async_recorded_prices(entity, until)
+            # Only quarter hours still without a price get one: the recorder's
+            # exact prices first, the hourly means for the rest.
+            if started is not None and (past := stats.get(entity)):
+                added |= engine.add_past_prices(
+                    entity,
+                    {s: p for s, p in past.items() if slot_start(started) <= s < until},
+                )
         smard: PriceTable | None = None
         market = self._smard_gaps()
         if market and engine.started is not None:
@@ -573,8 +585,8 @@ class MeterRuntime:
                     "%s: exchange prices from SMARD.de failed: %s", self.name, err
                 )
             else:
-                engine.tariffs = self._build_tariffs(smard, stats)
-        if self._stopped or (not added and smard is None and not stats):
+                engine.tariffs = self._build_tariffs(smard)
+        if self._stopped or (not added and smard is None):
             return
         now = dt_util.utcnow()
         engine.recompute(now)
@@ -637,8 +649,10 @@ class MeterRuntime:
         (`unit_of_measurement`), not from the current state: old statistics
         can hold another unit (e.g. ct/kWh), and the sensor may have no state
         at all. Statistics in another unit are skipped with a warning.
-        Hours without a mean stay without a price.
+        Hours without a mean stay without a price. Read from the start of
+        `start`'s hour: its row covers the quarter hours before `start` too.
         """
+        start = hour_start(start)
         entities = self._total_price_entities()
         if not entities or "recorder" not in self.hass.config.components:
             return {}
