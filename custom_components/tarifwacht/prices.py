@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from itertools import pairwise
 from typing import Any
 
@@ -215,6 +215,31 @@ def prices_from_states(
         while slot <= last and slot < end:
             prices[slot] = price
             slot += QUARTER
+    return prices
+
+
+def prices_from_statistics(
+    rows: Iterable[Mapping[str, Any]],
+) -> dict[datetime, float]:
+    """Prices of the quarter hours from the hourly means of a sensor's statistics.
+
+    For the time before Tarifwacht read a price sensor (or the recorder lost
+    its states): the hourly mean is all the statistics keep. It is taken to
+    be the price of each of the hour's four quarter hours. Hours without a
+    mean are left out, never a price of zero. `start` is a POSIX timestamp
+    as the recorder returns it.
+    """
+    prices: dict[datetime, float] = {}
+    for row in rows:
+        mean = row.get("mean")
+        start = row.get("start")
+        if mean is None or start is None:
+            continue
+        hour = datetime.fromtimestamp(start, UTC).replace(
+            minute=0, second=0, microsecond=0
+        )
+        for i in range(4):
+            prices[hour + i * QUARTER] = float(mean)
     return prices
 
 
