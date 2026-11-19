@@ -91,7 +91,7 @@ from .solar import (
     hourly_savings,
     solar_totals,
 )
-from .statistics_prices import StatisticsPriceSource, unit_factor
+from .statistics_prices import StatisticsPriceSource
 from .tariff_config import price_entity, tariff_from_data, tariff_key
 from .tariffs import PriceSource, Tariff
 from .timeslots import slot_start
@@ -427,7 +427,6 @@ class MeterRuntime:
         self._last_notify: datetime | None = None
         self._notify_later: CALLBACK_TYPE | None = None
         self._stats_prices: dict[str, StatisticsPriceSource] = {}
-        self._stats_loaded: bool = False
         self._started_at: datetime | None = None
         # Background work (past prices, archives); cancelled on stop, so it
         # never writes after the next runtime has taken over the files.
@@ -619,56 +618,56 @@ class MeterRuntime:
         """Read the prices of the total-price sensors from their statistics.
 
         The long-term statistics of a price sensor cover far more time than
-        its states (the recorder keeps those for days). The mean of an hour
-        is used for its four quarter hours. Local statistics only, nothing is
-        requested anywhere; the values replace nothing (the live price table
-        wins for every slot it has) and are not persisted. Reads once per
-        runtime; True if at least one sensor contributed prices.
+        its states (the recorder keeps those for days), and they can be
+        backfilled while the entry runs. The mean of an hour is used for its
+        four quarter hours. Local statistics only, nothing is requested
+        anywhere; the values replace nothing (the live price table wins for
+        every slot it has) and are not persisted. Read anew on every call;
+        True if at least one sensor contributed prices.
         """
-        if self._stats_loaded:
-            return bool(self._stats_prices)
-        self._stats_loaded = True
-        entities = sorted(self._total_price_entities())
-        if not entities or "recorder" not in self.hass.config.components:
-            return False
-        start = datetime(2000, 1, 1, tzinfo=UTC)
-        end = dt_util.utcnow()
-
-        def read() -> dict[str, list[dict[str, Any]]]:
-            return statistics_during_period(
-                self.hass, start, end, set(entities), "hour", None, {"mean"}
-            )
-
-        try:
-            rows = await get_instance(self.hass).async_add_executor_job(read)
-        except Exception as err:  # never block the setup
+        all_entities = self._total_price_entities()
+        entities = sorted(
+            entity
+            for entity in all_entities
+            if (state := self.hass.states.get(entity)) is not None
+            and price_unit_ok(state)
+        )
+        for entity in sorted(all_entities - set(entities)):
             _LOGGER.warning(
-                "%s: statistics of the price sensors not read: %s", self.name, err
-            )
-            self._stats_loaded = False  # allow one retry on the next call
-            return False
-        sources: dict[str, StatisticsPriceSource] = {}
-        for entity in entities:
-            state = self.hass.states.get(entity)
-            unit = state.attributes.get(ATTR_UNIT_OF_MEASUREMENT) if state else None
-            factor = unit_factor(unit)
-            if factor is None:
-                _LOGGER.warning(
-                    "%s: unit of %s not supported for reading its statistics "
-                    "(€/kWh or c€/kWh expected); not used for the past",
-                    self.name,
-                    entity,
-                )
-                continue
-            source = StatisticsPriceSource.from_statistics(rows.get(entity, []), factor)
-            if len(source):
-                sources[entity] = source
-        if sources:
-            _LOGGER.info(
-                "%s: price history from statistics of %s",
+                "%s: unit of %s not supported for reading its statistics "
+                "(€/kWh expected); not used for the past",
                 self.name,
-                ", ".join(sorted(sources)),
+                entity,
             )
+        sources: dict[str, StatisticsPriceSource] = {}
+        if entities and "recorder" in self.hass.config.components:
+            start = datetime(2000, 1, 1, tzinfo=UTC)
+            end = dt_util.utcnow()
+
+            def read() -> dict[str, list[dict[str, Any]]]:
+                return statistics_during_period(
+                    self.hass, start, end, set(entities), "hour", None, {"mean"}
+                )
+
+            try:
+                rows = await get_instance(self.hass).async_add_executor_job(read)
+            except Exception as err:  # never block the setup
+                _LOGGER.warning(
+                    "%s: statistics of the price sensors not read: %s",
+                    self.name,
+                    err,
+                )
+                return bool(self._stats_prices)
+            for entity in entities:
+                source = StatisticsPriceSource.from_statistics(rows.get(entity, []))
+                if len(source):
+                    sources[entity] = source
+            if sources:
+                _LOGGER.info(
+                    "%s: price history from statistics of %s",
+                    self.name,
+                    ", ".join(sorted(sources)),
+                )
         self._stats_prices = sources
         return bool(sources)
 
