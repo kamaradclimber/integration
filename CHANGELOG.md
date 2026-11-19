@@ -4,7 +4,7 @@
 
 ### Neu
 
-- **Die Vergangenheit eines Gesamtpreis-Sensors aus seiner Langzeitstatistik.** Tarifwacht liest für Tarifstunden vor der Einrichtung jetzt die stündliche Langzeitstatistik des Gesamtpreis-Sensors (falls vorhanden – z. B. nach einem Statistik-Import), statt darauf zu warten, dass der Recorder Verläufe aufbewahrt. Rückblick, *Statistik nachtragen* und *Statistik neu berechnen* rechnen damit für solche Tarife bis an den Anfang der Sensor-Statistik zurück. Lücken im laufenden Betrieb (fehlender Preis, z. B. bei einem Ausfall der Preisquelle) bleiben absichtlich ohne Preis, damit sie auffallen und nicht als 0-€-Preis gebucht werden. Bekannte Grenzen: Der Stundenmittelwert gilt für alle vier Viertelstunden dieser Stunde; Stunden ohne Statistik bleiben ohne Preis. Nur €/kWh.
+- **Gesamtpreis-Tarife rechnen auch vor der Einrichtung:** Rückblick, *Statistik nachtragen* und *Statistik neu berechnen* nehmen die Preise eines Gesamtpreis-Sensors jetzt aus seiner Langzeitstatistik, so weit sie zurückreicht; ein später hinzugefügter Tarif bekommt so auch die Zeit seit der Einrichtung. Die Statistik kennt nur Stundenmittel, die für alle vier Viertelstunden gelten; Lücken im laufenden Betrieb bleiben wie bisher ohne Preis. (danke an @kamaradclimber)
 
 ### Geändert
 
