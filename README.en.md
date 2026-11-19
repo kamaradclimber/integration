@@ -615,6 +615,8 @@ The long-term statistics of the deleted sensors stay in Home Assistant until you
 
 ## Reporting issues
 
+Questions, ideas and experiences are welcome in the [Discussions](https://github.com/tarifwacht/integration/discussions). For bugs:
+
 Please open an [issue](https://github.com/tarifwacht/integration/issues) with the **report for a bug report**: press *Tarifwacht → entry → the meter's device (e.g. "Home") → Diagnostic → Report for a bug report*. The report shows up as a notification (bell at the bottom left) to copy. It holds the versions, the meter and price sensors by role (integration, unit, state class, state – for the meter only whether it delivers a number), the tariffs by kind and number with prices, base price, bonus, Modul 3 windows and price changes, the state of the bookings (start, quarter hours booked, prices per tariff, SMARD.de), for PV and battery only whether purchase costs are entered (not the amounts), how the card reaches the dashboard, sensors without a value and open repair issues. Entity ids, the names of the entry and the tariffs, areas, meter readings and energy or cost totals are not in it. Still read it before sharing and delete what you would rather not show. Please report security issues privately, see [SECURITY.md](SECURITY.md).
 
 ### What is in the diagnostics file?

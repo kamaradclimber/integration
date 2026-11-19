@@ -613,6 +613,8 @@ Die Langzeitstatistik der gelöschten Sensoren bleibt in Home Assistant erhalten
 
 ## Fehler melden
 
+Fragen, Ideen und Erfahrungen sind in den [Discussions](https://github.com/tarifwacht/integration/discussions) gut aufgehoben. Für Fehler:
+
 Bitte als [Issue](https://github.com/tarifwacht/integration/issues), mit dem **Bericht für Fehlermeldung**: *Tarifwacht → Eintrag → Gerät des Zählers (z. B. „Haus“) → Diagnose → Bericht für Fehlermeldung* drücken. Der Bericht erscheint als Benachrichtigung (Glocke unten links) zum Kopieren. Er enthält die Versionen, Zähler und Preissensoren nach Rolle (Integration, Einheit, Zustandsklasse, Zustand – beim Zähler nur, ob er eine Zahl liefert), die Tarife nach Art und Nummer mit Preisen, Grundpreis, Bonus, Modul-3-Zeitfenstern und Preisänderungen, den Stand der Buchung (Beginn, gebuchte Viertelstunden, Preise je Tarif, SMARD.de), bei PV und Speicher nur, ob Anschaffungskosten eingetragen sind (nicht die Beträge), wie die Karte ins Dashboard kommt, Sensoren ohne Wert und offene Reparaturhinweise. Entity-IDs, die Namen von Eintrag und Tarifen, Bereiche, Zählerstände sowie Energie- und Kostensummen stehen nicht darin. Lies ihn trotzdem vor dem Teilen und lösche, was du nicht zeigen willst. Sicherheitslücken bitte vertraulich, siehe [SECURITY.md](SECURITY.md).
 
 ### Was steht in der Diagnose-Datei?
