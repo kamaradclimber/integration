@@ -91,6 +91,7 @@ from .solar import (
     hourly_savings,
     solar_totals,
 )
+from .statistics_prices import StatisticsPriceSource, unit_factor
 from .tariff_config import price_entity, tariff_from_data, tariff_key
 from .tariffs import PriceSource, Tariff
 from .timeslots import slot_start
@@ -425,6 +426,8 @@ class MeterRuntime:
         self._unsubscribe: list[CALLBACK_TYPE] = []
         self._last_notify: datetime | None = None
         self._notify_later: CALLBACK_TYPE | None = None
+        self._stats_prices: dict[str, StatisticsPriceSource] = {}
+        self._stats_loaded: bool = False
         self._started_at: datetime | None = None
         # Background work (past prices, archives); cancelled on stop, so it
         # never writes after the next runtime has taken over the files.
@@ -440,6 +443,7 @@ class MeterRuntime:
         are fetched from SMARD.de, only if a tariff needs them; raises
         SmardError if that fails.
         """
+        await self._async_statistics_prices()
         until = self.engine.started
         if until is None or slot_start(start) >= until:
             return None
@@ -511,6 +515,15 @@ class MeterRuntime:
         for subentry in tariff_subentries(self.entry):
             data = subentry.data
 
+            def price_table(entity: str) -> PriceSource:
+                table = self.engine.price_table(entity)
+                stats = self._stats_prices.get(entity)
+                if stats is None:
+                    return table
+                # The statistics fill the hours before the sensor was read;
+                # the live table wins wherever it has a price.
+                return FallbackPrice(table, stats, dt_util.utcnow())
+
             def market(entity: str, data: Mapping[str, Any] = data) -> PriceSource:
                 table = self.engine.price_table(entity)
                 if smard is None:
@@ -518,21 +531,24 @@ class MeterRuntime:
                 return FallbackPrice(table, smard, self._smard_until(data))
 
             key = tariff_key(subentry.subentry_id, data)
-            tariffs[key] = tariff_from_data(data, self.engine.price_table, market)
+            tariffs[key] = tariff_from_data(data, price_table, market)
         return tariffs
 
     async def _async_fill_past_prices(self) -> None:
         """Prices for the time before Tarifwacht read a tariff's price sensor.
 
         A tariff added later, or given another price sensor, would otherwise
-        leave that time out of every comparison. Exchange prices come from
-        SMARD.de (stored for all entries), only for tariffs whose user agreed
-        to it in the tariff's form; a total price only from the sensor's own
-        recorded states (local), never from SMARD.de. Runs in the background;
+        leave that time out of every comparison. Total-price sensors are read
+        from their long-term statistics (local, always) and from their
+        recorded states (local); exchange prices only for tariffs whose user
+        agreed to it in the tariff's form (SMARD.de). Runs in the background;
         what fails or cannot be found stays without a price, and the next
         start tries again.
         """
         engine = self.engine
+        stats = await self._async_statistics_prices()
+        if stats:
+            engine.tariffs = self._build_tariffs()
         added = False
         for entity in sorted(self._total_price_entities()):
             if (until := engine.unpriced_until(entity)) is not None:
@@ -550,7 +566,7 @@ class MeterRuntime:
                 )
             else:
                 engine.tariffs = self._build_tariffs(smard)
-        if self._stopped or (not added and smard is None):
+        if self._stopped or (not added and smard is None and not stats):
             return
         now = dt_util.utcnow()
         engine.recompute(now)
@@ -598,6 +614,63 @@ class MeterRuntime:
             "%s: %s prices of %s from the recorder", self.name, len(prices), entity
         )
         return self.engine.add_past_prices(entity, prices)
+
+    async def _async_statistics_prices(self) -> bool:
+        """Read the prices of the total-price sensors from their statistics.
+
+        The long-term statistics of a price sensor cover far more time than
+        its states (the recorder keeps those for days). The mean of an hour
+        is used for its four quarter hours. Local statistics only, nothing is
+        requested anywhere; the values replace nothing (the live price table
+        wins for every slot it has) and are not persisted. Reads once per
+        runtime; True if at least one sensor contributed prices.
+        """
+        if self._stats_loaded:
+            return bool(self._stats_prices)
+        self._stats_loaded = True
+        entities = sorted(self._total_price_entities())
+        if not entities or "recorder" not in self.hass.config.components:
+            return False
+        start = datetime(2000, 1, 1, tzinfo=UTC)
+        end = dt_util.utcnow()
+
+        def read() -> dict[str, list[dict[str, Any]]]:
+            return statistics_during_period(
+                self.hass, start, end, set(entities), "hour", None, {"mean"}
+            )
+
+        try:
+            rows = await get_instance(self.hass).async_add_executor_job(read)
+        except Exception as err:  # never block the setup
+            _LOGGER.warning(
+                "%s: statistics of the price sensors not read: %s", self.name, err
+            )
+            self._stats_loaded = False  # allow one retry on the next call
+            return False
+        sources: dict[str, StatisticsPriceSource] = {}
+        for entity in entities:
+            state = self.hass.states.get(entity)
+            unit = state.attributes.get(ATTR_UNIT_OF_MEASUREMENT) if state else None
+            factor = unit_factor(unit)
+            if factor is None:
+                _LOGGER.warning(
+                    "%s: unit of %s not supported for reading its statistics "
+                    "(€/kWh or c€/kWh expected); not used for the past",
+                    self.name,
+                    entity,
+                )
+                continue
+            source = StatisticsPriceSource.from_statistics(rows.get(entity, []), factor)
+            if len(source):
+                sources[entity] = source
+        if sources:
+            _LOGGER.info(
+                "%s: price history from statistics of %s",
+                self.name,
+                ", ".join(sorted(sources)),
+            )
+        self._stats_prices = sources
+        return bool(sources)
 
     async def _async_hourly_energy(
         self, start: datetime, end: datetime

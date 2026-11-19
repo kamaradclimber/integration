@@ -45,7 +45,7 @@ The user interface is available in German and English and follows the language o
 - **Base prices** optional, per month or per year, booked pro rata per day.
 - **Credit per year** per tariff, e.g. for Modul 1 (§ 14a EnWG): spread pro rata per day like a base price, see [Modul 3](#modul-3--14a-enwg).
 - **Comparison for any period** via an action, broken down by month – also **before the setup**, as far back as your meter's long-term statistics go: what would last year have cost with each tariff? On request also [written into the long-term statistics](#import-statistics).
-- **Prices every tariff from the setup on:** consumption and prices are stored per quarter hour. A tariff added or corrected later therefore applies to the whole period.
+- **Prices every tariff from the setup on:** consumption and prices are stored per quarter hour. A tariff added or corrected later therefore applies to the whole period. If the price sensor of a newly added tariff does not know the time before, Tarifwacht reads the prices from the sensor's long-term statistics, from the recorder or – only with your tick in the tariff – from SMARD.de.
 - **Loses nothing:** if the meter drops out or Home Assistant restarts, the consumption of the gap is booked afterwards. If a price is missing, Tarifwacht never uses 0 €. Meter resets and implausible jumps are detected and not booked.
 - **Easy on SD cards:** writes only once per quarter hour (closed days once a day into a yearly archive) and updates the sensors at most once a minute.
 - Local only: reads existing entities, no cloud. Only for looking back does Tarifwacht load public exchange prices from SMARD.de.
@@ -85,7 +85,7 @@ Or by hand:
 
 1. **Grid import meter:** name (e.g. "Home") and meter. If a grid import is set up in the energy dashboard, that meter is already in the field. A further entry is only meant for a further meter: further tariffs for the same meter go to the existing entry under *Add tariff*, and the form then says so too.
 2. **Fixed-price tariff:** energy price (ct/kWh, gross), optionally the base price per month. It becomes "My current tariff".
-3. **Dynamic tariff:** first choose the kind – **exchange price plus surcharges** (recommended, see [Adding a dynamic tariff](#adding-a-dynamic-tariff)) or a sensor with the total price (also your own tariff; calculates only from the setup on) –, then the prices. Tarifwacht suggests the price sensor when it finds one: for the exchange price the one of Einspeisewacht or the market price of EPEX Spot, for the total price the total price of EPEX Spot. A new tariff under *Add tariff* first gets the sensor of a tariff of the same kind. Every suggestion can be changed.
+3. **Dynamic tariff:** first choose the kind – **exchange price plus surcharges** (recommended, see [Adding a dynamic tariff](#adding-a-dynamic-tariff)) or a sensor with the total price (also your own tariff; calculates the time before the setup from the sensor's long-term statistics, as far as they reach) –, then the prices. Tarifwacht suggests the price sensor when it finds one: for the exchange price the one of Einspeisewacht or the market price of EPEX Spot, for the total price the total price of EPEX Spot. A new tariff under *Add tariff* first gets the sensor of a tariff of the same kind. Every suggestion can be changed.
 
 This creates the first two tariffs. If you set up Tarifwacht before 0.1.0 with a total price sensor: add the dynamic tariff a second time as "exchange price plus surcharges", then you can delete the old one.
 
@@ -98,7 +98,7 @@ This creates the first two tariffs. If you set up Tarifwacht before 0.1.0 with a
 | Kind | Inputs |
 |---|---|
 | Fixed price | energy price (ct/kWh, gross) |
-| Dynamic: sensor with the total price (also your own tariff) | any sensor in €/kWh that already contains the whole price: the total price of a dynamic tariff, or your own tariff as a template sensor. A sensor only knows its own past – calculates only from the setup on |
+| Dynamic: sensor with the total price (also your own tariff) | any sensor in €/kWh that already contains the whole price: the total price of a dynamic tariff, or your own tariff as a template sensor. before the setup it calculates from its long-term statistics, as far back as they go |
 | Dynamic: exchange price plus surcharges | exchange price sensor; grid fee, taxes/levies, supplier surcharge (each ct/kWh net); VAT (%) |
 | Time-of-use tariff: fixed prices by time of day | energy price outside the time windows and up to four time windows with their own price (each ct/kWh, gross); templates for known tariffs, see [Time-of-use tariff](#time-of-use-tariff). Also a tariff with day and night prices |
 
@@ -124,7 +124,7 @@ Fixed energy prices that depend on the time of day – such as Octopus Heat, Oct
 
 ### Adding a dynamic tariff
 
-Choose **exchange price plus surcharges**. Only then can Tarifwacht also calculate the time before the setup ([looking back](#looking-back-before-the-setup), [import statistics](#import-statistics)) – the exchange prices of that time come from SMARD.de. A sensor with the total price only knows the time since setup.
+Choose **exchange price plus surcharges**. Only then can Tarifwacht also calculate the time before the setup ([looking back](#looking-back-before-the-setup), [import statistics](#import-statistics)) – the exchange prices of that time come from SMARD.de. A sensor with the total price uses its long-term statistics (hourly values, as far back as they reach) for the time before the setup; hours without statistics stay without a price – and if you add it later, the same applies from its first price.
 
 If you set a surcharge and a tax in **EPEX Spot**, simply copy these values – the tariff then calculates exactly like EPEX Spot's total price:
 
@@ -525,7 +525,7 @@ If the start lies before the setup, Tarifwacht calculates that time as well:
 
 - **Consumption:** from your grid import meter's long-term statistics. They hold hourly values; each hour is spread evenly over its four quarter hours. Exact for a fixed price, a good approximation for dynamic prices (the exchange price changes every quarter hour since 1 October 2025).
 - **Exchange prices:** from [SMARD.de](https://www.smard.de) (Bundesnetzagentur), day-ahead DE-LU – the same prices as the EPEX Spot market price. Tarifwacht loads them on the first comparison of a period (one request per week, a year takes about half a minute) and keeps them; after that no download is needed.
-- **Which tariffs:** fixed price, time-of-use tariff and "exchange price plus surcharges" (also with Modul 3 and price changes). A **sensor with the total price** only knows the time since setup – such tariffs are listed last with `energy_without_price_kwh`, are not counted as the cheapest and have no difference to the current tariff (`null`), since they would look cheaper than they are. Tip: add your dynamic tariff as "exchange price plus surcharges", see [Adding a dynamic tariff](#adding-a-dynamic-tariff).
+- **Which tariffs:** fixed price, time-of-use tariff and "exchange price plus surcharges" (also with Modul 3 and price changes). A **sensor with the total price** without long-term statistics reaching far enough back only knows the time since setup – such tariffs are listed last with `energy_without_price_kwh`, are not counted as the cheapest and have no difference to the current tariff (`null`), since they would look cheaper than they are. Tip: add your dynamic tariff as "exchange price plus surcharges", see [Adding a dynamic tariff](#adding-a-dynamic-tariff).
 - **Start:** at the earliest with the first hour the meter's statistics have values for – before it there would only be base prices without consumption. `start` in the response shows where the period actually begins.
 - `estimate` shows until when it was estimated, how much energy that was and how many hours after that are missing in the statistics (e.g. because Home Assistant was off; the base price keeps counting there, it is owed anyway); plus the SMARD.de attribution if exchange prices from there were needed.
 - Prices and base prices apply as the tariff is entered today (with its price changes). For a comparison across a turn of the year, enter the old prices as a price change, e.g. last year's grid fees.
@@ -596,7 +596,7 @@ Tarifwacht reports problems under *Settings → Repairs*:
 - **Meter with an unsupported unit:** Tarifwacht books nothing until the meter delivers Wh, kWh or MWh.
 - **Entity missing:** the meter or a price sensor has not existed for at least ten minutes, e.g. because it was deleted or replaced by a new device. Without the meter Tarifwacht books nothing. Choose the meter again under *Tarifwacht → ⋮ → Reconfigure*, a price sensor in the tariff. Tarifwacht follows a renamed entity itself (since 0.1.2).
 - **Tarifwacht sensor chosen as a source:** the meter or a price sensor is a sensor of Tarifwacht itself, e.g. "Grid purchase" as the meter. Tarifwacht does not read it, otherwise the entry would read its own results: without the meter it books no consumption. Figures already booked stay. Choose the real meter under *Tarifwacht → ⋮ → Reconfigure*, a price sensor in the tariff. New entries and tariffs do not allow it in the first place.
-- **Prices missing:** the price of a past quarter hour is missing; the price integration has probably failed. After 24 hours the consumption is counted without a price – never as free. So that the affected tariff does not look cheaper, "Difference to current tariff" and "Cheapest tariff" leave such quarter hours out for all tariffs; how much energy that was is in the attribute `energy_left_out_kwh`.
+- **Prices missing:** the price of a past quarter hour is missing; the price integration has probably failed. After 24 hours the consumption is counted without a price – never as free. So that the affected tariff does not look cheaper, "Difference to current tariff" and "Cheapest tariff" leave such quarter hours out for all tariffs; how much energy that was is in the attribute `energy_left_out_kwh`. The same applies to a total-price sensor added later, as far as neither its long-term statistics nor its recorder history reach back to the setup, and to an exchange price tariff added later without the SMARD.de tick.
 
 Further:
 

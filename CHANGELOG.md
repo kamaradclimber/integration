@@ -2,6 +2,10 @@
 
 ## Unveröffentlicht
 
+### Neu
+
+- **Gesamtpreis-Sensors Vergangenheit aus der Langzeitstatistik.** Tarifwacht liest für Tarifstunden vor der Einrichtung jetzt die stündliche Langzeitstatistik des Gesamtpreis-Sensors (falls vorhanden – z. B. nach einem Statistik-Import), statt darauf zu warten, dass der Recorder Verläufe aufbewahrt. Rückblick, *Statistik nachtragen* und *Statistik neu berechnen* rechnen damit für solche Tarife bis an den Anfang der Sensor-Statistik zurück. Bekannte Grenzen: Der Stundenmittelwert gilt für alle vier Viertelstunden dieser Stunde; Stunden ohne Statistik bleiben ohne Preis. Nur €/kWh (bzw. c€/kWh und €/MWh).
+
 ### Geändert
 
 - **README:** Hinweis aufs fehlende Icon im alten HACS-Dashboard entfernt (seit Home Assistant 2026.11 gibt es den Marketplace).
