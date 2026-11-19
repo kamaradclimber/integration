@@ -122,7 +122,7 @@ Feste Arbeitspreise, die von der Uhrzeit abhängen – etwa Octopus Heat, Octopu
 
 ### Dynamischen Tarif anlegen
 
-Nimm **Börsenpreis plus Aufschläge**. Nur damit kann Tarifwacht auch die Zeit vor der Einrichtung rechnen ([Rückblick](#rückblick-vor-der-einrichtung), [Statistik nachtragen](#statistik-nachtragen)) – die Börsenpreise von damals kommen von SMARD.de. Ein Sensor mit Gesamtpreis nutzt für die Zeit vor der Einrichtung seine Langzeitstatistik (Stundenwerte, so weit sie zurückreicht); Stunden ohne Statistik bleiben ohne Preis – und fügst du ihn später hinzu, gilt dasselbe ab dem ersten Preis.
+Nimm **Börsenpreis plus Aufschläge**. Nur damit kann Tarifwacht auch die Zeit vor der Einrichtung rechnen ([Rückblick](#rückblick-vor-der-einrichtung), [Statistik nachtragen](#statistik-nachtragen)) – die Börsenpreise von damals kommen von SMARD.de. Ein Sensor mit Gesamtpreis nutzt für die Zeit vor der Einrichtung seine Langzeitstatistik (Stundenwerte, so weit sie zurückreicht); Stunden ohne Statistik bleiben ohne Preis – und fügst du ihn später hinzu, gilt dasselbe ab dem ersten Preis. Fehlt ein Preis im laufenden Betrieb, wird er nicht aus der Statistik ergänzt: er bleibt unpreiswert, wird gemeldet (siehe *Preise fehlen* unter [Fehlerbehebung](#fehlerbehebung)) und im Vergleich weggelassen.
 
 Hast du in **EPEX Spot** einen Aufschlag und eine Steuer eingestellt, übernimm einfach diese Werte – dann rechnet der Tarif genau wie der Gesamtpreis von EPEX Spot:
 

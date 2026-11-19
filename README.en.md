@@ -98,7 +98,7 @@ This creates the first two tariffs. If you set up Tarifwacht before 0.1.0 with a
 | Kind | Inputs |
 |---|---|
 | Fixed price | energy price (ct/kWh, gross) |
-| Dynamic: sensor with the total price (also your own tariff) | any sensor in €/kWh that already contains the whole price: the total price of a dynamic tariff, or your own tariff as a template sensor. before the setup it calculates from its long-term statistics, as far back as they go |
+| Dynamic: sensor with the total price (also your own tariff) | any sensor in €/kWh that already contains the whole price: the total price of a dynamic tariff, or your own tariff as a template sensor. Before the setup it calculates from its long-term statistics, as far back as they go |
 | Dynamic: exchange price plus surcharges | exchange price sensor; grid fee, taxes/levies, supplier surcharge (each ct/kWh net); VAT (%) |
 | Time-of-use tariff: fixed prices by time of day | energy price outside the time windows and up to four time windows with their own price (each ct/kWh, gross); templates for known tariffs, see [Time-of-use tariff](#time-of-use-tariff). Also a tariff with day and night prices |
 
@@ -124,7 +124,7 @@ Fixed energy prices that depend on the time of day – such as Octopus Heat, Oct
 
 ### Adding a dynamic tariff
 
-Choose **exchange price plus surcharges**. Only then can Tarifwacht also calculate the time before the setup ([looking back](#looking-back-before-the-setup), [import statistics](#import-statistics)) – the exchange prices of that time come from SMARD.de. A sensor with the total price uses its long-term statistics (hourly values, as far back as they reach) for the time before the setup; hours without statistics stay without a price – and if you add it later, the same applies from its first price.
+Choose **exchange price plus surcharges**. Only then can Tarifwacht also calculate the time before the setup ([looking back](#looking-back-before-the-setup), [import statistics](#import-statistics)) – the exchange prices of that time come from SMARD.de. A sensor with the total price uses its long-term statistics (hourly values, as far back as they reach) for the time before the setup; hours without statistics stay without a price – and if you add it later, the same applies from its first price. A price that goes missing during operation is not backfilled from the statistics: it stays unpriced, is reported (see *Prices missing* under [Troubleshooting](#troubleshooting)) and is left out of the comparison.
 
 If you set a surcharge and a tax in **EPEX Spot**, simply copy these values – the tariff then calculates exactly like EPEX Spot's total price:
 
