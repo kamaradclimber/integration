@@ -44,7 +44,7 @@ def auto_enable_custom_integrations(
     """The recorder must be set up before `hass` (listed first)."""
 
 
-async def import_price_statistics(hass: HomeAssistant) -> None:
+async def import_price_statistics(hass: HomeAssistant, unit: str = "€/kWh") -> None:
     """Backfilled hourly prices of the day before the setup (€/kWh), written
     after Tarifwacht was set up, as by hand or by another tool.
 
@@ -57,7 +57,7 @@ async def import_price_statistics(hass: HomeAssistant) -> None:
         "name": None,
         "source": "recorder",
         "statistic_id": PRICE,
-        "unit_of_measurement": "€/kWh",
+        "unit_of_measurement": unit,
     }
     if "unit_class" in StatisticMetaData.__annotations__:
         metadata["unit_class"] = None
@@ -103,6 +103,23 @@ async def test_compare_without_statistics_leaves_prices_out(
     before the setup: the dynamic tariff is left out, nothing booked."""
     entry = await setup_entry(hass, market=False)
     await import_meter_statistics(hass)
+
+    result = await compare(hass, entry, start="2026-10-24 15:00:00")
+    assert result["energy_kwh"] == pytest.approx(4.0)
+    tariffs = {t["tariff"]: t for t in result["tariffs"]}
+    assert tariffs["Dynamic"]["energy_without_price_kwh"] == pytest.approx(4.0)
+    assert tariffs["Dynamic"]["difference_to_current"] is None
+
+
+@pytest.mark.freeze_time(START)
+async def test_compare_ignores_statistics_in_another_unit(
+    hass: HomeAssistant,
+) -> None:
+    """Hourly statistics recorded in another unit (ct/kWh) are not used as
+    prices: the dynamic tariff is left out, like without statistics."""
+    entry = await setup_entry(hass, market=False)
+    await import_meter_statistics(hass)
+    await import_price_statistics(hass, unit="ct/kWh")
 
     result = await compare(hass, entry, start="2026-10-24 15:00:00")
     assert result["energy_kwh"] == pytest.approx(4.0)

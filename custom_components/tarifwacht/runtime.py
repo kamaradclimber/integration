@@ -11,7 +11,10 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 from homeassistant.components.recorder import get_instance, history
-from homeassistant.components.recorder.statistics import statistics_during_period
+from homeassistant.components.recorder.statistics import (
+    get_metadata,
+    statistics_during_period,
+)
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState, ConfigSubentry
 from homeassistant.const import (
     ATTR_UNIT_OF_MEASUREMENT,
@@ -630,33 +633,35 @@ class MeterRuntime:
         on every action. Local statistics only, nothing is requested
         anywhere; the values are never persisted (the live price table wins
         for every slot it has) and are read again next time. The unit is the
-        one the config flow enforces (see `price_unit_ok` for the live read);
-        a sensor whose state reports another unit is skipped. A sensor with
-        no state at all is still read (its unit cannot be checked then).
+        one the means were recorded in, taken from the statistics metadata
+        (`unit_of_measurement`), not from the current state: old statistics
+        can hold another unit (e.g. ct/kWh), and the sensor may have no state
+        at all. Statistics in another unit are skipped with a warning.
         Hours without a mean stay without a price.
         """
-        entities = set(self._total_price_entities())
-        for entity in list(entities):
-            if (state := self.hass.states.get(entity)) is not None and not (
-                price_unit_ok(state)
-            ):
-                _LOGGER.warning(
-                    "%s: unit of %s not supported for its statistics "
-                    "(€/kWh expected); not used for the past",
-                    self.name,
-                    entity,
-                )
-                entities.discard(entity)
+        entities = self._total_price_entities()
         if not entities or "recorder" not in self.hass.config.components:
             return {}
 
-        def read() -> dict[str, list[dict[str, Any]]]:
-            return statistics_during_period(
-                self.hass, start, None, entities, "hour", None, {"mean"}
+        def read() -> tuple[dict[str, str | None], dict[str, list[dict[str, Any]]]]:
+            meta = get_metadata(self.hass, statistic_ids=entities)
+            units = {
+                entity: md.get("unit_of_measurement")
+                for entity, (_, md) in meta.items()
+            }
+            usable = {e for e, unit in units.items() if unit in PRICE_UNITS}
+            # An entity without metadata has no statistics either.
+            rows = (
+                statistics_during_period(
+                    self.hass, start, None, usable, "hour", None, {"mean"}
+                )
+                if usable
+                else {}
             )
+            return units, rows
 
         try:
-            rows = await get_instance(self.hass).async_add_executor_job(read)
+            units, rows = await get_instance(self.hass).async_add_executor_job(read)
         except Exception as err:  # never block the caller
             _LOGGER.warning(
                 "%s: statistics of the price sensors not read: %s",
@@ -664,10 +669,19 @@ class MeterRuntime:
                 err,
             )
             return {}
+        for entity in sorted(entities):
+            if entity in units and units[entity] not in PRICE_UNITS:
+                _LOGGER.warning(
+                    "%s: statistics of %s use %s, not €/kWh; not used for the past",
+                    self.name,
+                    entity,
+                    units[entity] if units[entity] is not None else "no unit",
+                )
         stats = {
             entity: prices
-            for entity in entities
-            if (prices := prices_from_statistics(rows.get(entity, [])))
+            for entity, unit in units.items()
+            if unit in PRICE_UNITS
+            and (prices := prices_from_statistics(rows.get(entity, [])))
         }
         if stats:
             _LOGGER.info(
