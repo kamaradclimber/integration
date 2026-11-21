@@ -413,8 +413,21 @@ def async_setup_services(hass: HomeAssistant) -> None:
             else:
                 result = await async_import_history(hass, entry, call.data[ATTR_START])
         except StatisticsImportError as err:
+            placeholders: dict[str, str] = {}
+            if err.key == "prices_missing":
+                placeholders = {
+                    "tariffs": ", ".join(err.skipped),
+                    "details": "; ".join(
+                        f"{detail['tariff']}: {missing['tariff']} at {missing['from']}"
+                        for detail in err.skipped_details
+                        for missing in detail.get("missing_prices", [])
+                    )
+                    or "No first missing quarter hour could be identified.",
+                }
             raise ServiceValidationError(
-                translation_domain=DOMAIN, translation_key=f"import_{err.key}"
+                translation_domain=DOMAIN,
+                translation_key=f"import_{err.key}",
+                translation_placeholders=placeholders,
             ) from err
         except SmardError as err:
             raise HomeAssistantError(

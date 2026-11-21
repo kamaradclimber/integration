@@ -1084,7 +1084,7 @@
       "message": "Nothing to import: the statistics already reach back to this day."
     },
     "import_prices_missing": {
-      "message": "Nothing imported: every tariff lacks prices in this period. A tariff with a total price sensor has no prices from before the setup – add it as “exchange price plus surcharges” as well."
+      "message": "No statistics could be written because the affected tariffs have missing prices. Skipped: {tariffs}. First quarter hours with consumption but no price: {details}."
     },
     "import_busy": {
       "message": "The statistics of this entry are being imported or recalculated right now – please wait until that is done."
@@ -1103,6 +1103,15 @@
     },
     "recalculated_skipped": {
       "message": "Left out because prices are missing: {tariffs}."
+    },
+    "recalculate_prices_missing": {
+      "message": "No statistics were recalculated because prices were missing for the affected sensors. Skipped: {tariffs}."
+    },
+    "recalculated_missing_prices": {
+      "message": "First quarter hours with consumption but no price:"
+    },
+    "recalculated_missing_price": {
+      "message": "- {tariff}: {missing_tariff} first has no price for consumption at {when}."
     },
     "recalculated_implausible": {
       "message": "{count} hours with an implausible meter change were left out (first: {hours})."

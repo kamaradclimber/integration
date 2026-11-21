@@ -1084,7 +1084,7 @@
       "message": "Nichts nachzutragen: Die Statistik reicht bereits bis zu diesem Tag zurück."
     },
     "import_prices_missing": {
-      "message": "Nichts nachgetragen: Allen Tarifen fehlen in diesem Zeitraum Preise. Ein Tarif mit Gesamtpreis-Sensor hat keine Preise von vor der Einrichtung – lege ihn zusätzlich als „Börsenpreis plus Aufschläge“ an."
+      "message": "Es konnte keine Statistik geschrieben werden, weil den betroffenen Tarifen Preise fehlen. Ausgelassen: {tariffs}. Erste Viertelstunden mit Verbrauch, aber ohne Preis: {details}."
     },
     "import_busy": {
       "message": "Die Statistik dieses Eintrags wird gerade nachgetragen oder neu berechnet – bitte warten, bis das fertig ist."
@@ -1103,6 +1103,15 @@
     },
     "recalculated_skipped": {
       "message": "Ausgelassen, weil Preise fehlen: {tariffs}."
+    },
+    "recalculate_prices_missing": {
+      "message": "Es wurde keine Statistik neu berechnet, weil den betroffenen Sensoren Preise fehlten. Ausgelassen: {tariffs}."
+    },
+    "recalculated_missing_prices": {
+      "message": "Erste Viertelstunden mit Verbrauch, aber ohne Preis:"
+    },
+    "recalculated_missing_price": {
+      "message": "- {tariff}: Für „{missing_tariff}“ fehlt erstmals um {when} ein Preis für den Verbrauch."
     },
     "recalculated_implausible": {
       "message": "{count} Stunden mit unplausiblem Zählerwert ausgelassen (zuerst: {hours})."
